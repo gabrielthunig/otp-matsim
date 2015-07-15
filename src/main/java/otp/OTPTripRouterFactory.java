@@ -41,6 +41,17 @@ public final class OTPTripRouterFactory implements
 		this.timeZone = timeZone;
 	}
 
+	public OTPTripRouterFactory(TransitSchedule transitSchedule, Network matsimNetwork, 
+			CoordinateTransformation ct, String day, String timeZone, GraphService graphService) {
+        SPTServiceFactory sptService = new GenericAStarFactory();
+        pathservice = new RetryingPathServiceImpl(graphService, sptService);
+		this.transitSchedule = transitSchedule;
+		this.matsimNetwork = matsimNetwork;
+		this.ct = ct;
+		this.day = day;
+		this.timeZone = timeZone;
+	}
+	
     public static GraphService createGraphService(String graphFile) {
         try {
             final Graph graph = Graph.load(new File(graphFile), Graph.LoadLevel.FULL);

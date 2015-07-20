@@ -26,4 +26,5 @@ public class Constants {
     public static final String DATE = "2015-07-01"; // Wednesday
     public static final double SCHEDULE_END_TIME_ON_FOLLOWING_DATE = 24*60*60;
     public static final double MATRIX_START_TIME = 8*60*60;
+    public static final String INPUT_FILE = "accessibilities.csv";
 }

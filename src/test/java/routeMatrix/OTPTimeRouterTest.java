@@ -37,7 +37,7 @@ public class OTPTimeRouterTest {
 	
 	String fromCoordSystem;
 	double minX, minY, maxX, maxY;
-	switch (1) {
+	switch (0) {
     	case 1:
     		fromCoordSystem = Constants.TARGET_SCENARIO_COORDINATE_SYSTEM;
     		minX = 1486664.452457776;

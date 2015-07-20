@@ -16,23 +16,34 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
+import com.csvreader.CsvReader;
+
 public class TimeMatrixCalculator {
 
 	public static void main(String[] args) {
 		
-		String fromCoordSystem = TransformationFactory.WGS84_UTM33N;
-		double minX = 4574000;
-		double minY = 5802000;
-		double maxX = 4620000;
-		double maxY = 5839000;
-		
-		Coord fromCoord = new CoordImpl(minX, minY);
-		Coord toCoord = new CoordImpl(maxX, maxY);
-		
+		String fromCoordSystem = TransformationFactory.DHDN_GK4;
 		OTPTimeRouter router = instantiateRouter(TransformationFactory.getCoordinateTransformation( 
         		fromCoordSystem, TransformationFactory.WGS84));
-		System.out.println(router.routeLegTime(fromCoord, toCoord, Constants.MATRIX_START_TIME));
-//		long[][] matrix = calcMatrix(null, Constants.MATRIX_START_TIME, router);
+		
+//		double minX = 4574000;
+//		double minY = 5802000;
+//		double maxX = 4620000;
+//		double maxY = 5839000;
+//		
+//		Coord fromCoord = new CoordImpl(minX, minY);
+//		Coord toCoord = new CoordImpl(maxX, maxY);
+//		
+//		System.out.println(router.routeLegTime(fromCoord, toCoord, Constants.MATRIX_START_TIME));
+		
+		String inputFile = (Constants.BASEDIR + Constants.INPUT_FILE);
+		
+		long[][] matrix = calcMatrix(getFacilities(inputFile), Constants.MATRIX_START_TIME, router);
+	}
+	
+	private static List<Coord> getFacilities(String inputFile) {
+		CSVReader reader = new CSVReader(inputFile);
+		return null;
 	}
 	
 	public static long[][] calcMatrix(List<Coord> facilities, double departureTime, OTPTimeRouter router) {

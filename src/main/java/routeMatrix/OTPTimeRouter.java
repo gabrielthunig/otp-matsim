@@ -32,11 +32,8 @@ public class OTPTimeRouter {
 
 	private CoordinateTransformation transitScheduleToPathServiceCt;
 	
-	public OTPTimeRouter(PathService pathservice, /*TransitSchedule transitSchedule, 
-			Network matsimNetwork,*/ String dateString, String timeZoneString, CoordinateTransformation ct) {
+	public OTPTimeRouter(PathService pathservice, String dateString, String timeZoneString, CoordinateTransformation ct) {
 		this.pathservice = pathservice;
-//		this.transitSchedule = transitSchedule;
-//		this.matsimNetwork = matsimNetwork;
 		this.transitScheduleToPathServiceCt = ct;
 		this.timeZone = TimeZone.getTimeZone(timeZoneString);
 		try {
@@ -79,6 +76,7 @@ public class OTPTimeRouter {
 
 		List<GraphPath> paths = pathservice.getPaths(options);
 		
+//		TODO: wartezeiten checken
 		return paths.get(0).getDuration();
 		
 	}	

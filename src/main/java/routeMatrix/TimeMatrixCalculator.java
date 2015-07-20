@@ -2,6 +2,7 @@ package routeMatrix;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.matsim.api.core.v01.Coord;
@@ -15,6 +16,8 @@ import org.opentripplanner.routing.impl.RetryingPathServiceImpl;
 import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
+
+import playground.gthunig.utils.CSVReader;
 
 import com.csvreader.CsvReader;
 
@@ -38,11 +41,29 @@ public class TimeMatrixCalculator {
 		
 		String inputFile = (Constants.BASEDIR + Constants.INPUT_FILE);
 		
-		long[][] matrix = calcMatrix(getFacilities(inputFile), Constants.MATRIX_START_TIME, router);
+		List<Coord> facilities = getFacilities(inputFile);
+		
+		long[][] matrix = calcMatrix(facilities, Constants.MATRIX_START_TIME, router);
 	}
 	
 	private static List<Coord> getFacilities(String inputFile) {
 		CSVReader reader = new CSVReader(inputFile);
+		List<Coord> facilities = new ArrayList<Coord>();
+		String[] line = null;
+		while ((line = reader.readLine()) != null) {
+			try {
+				double x,y;
+				x = Double.parseDouble(line[0]);
+				y = Double.parseDouble(line[1]);
+				System.out.println("X: " + x + "   Y: " + y);
+				if (x > 0 && y > 0) {
+					Coord actual = new CoordImpl(x, y);
+					facilities.add(actual);
+				}
+			} catch (Exception e) {
+				continue;
+			}
+		}
 		return null;
 	}
 	

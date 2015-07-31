@@ -139,7 +139,6 @@ public class OTPRoutingModule implements RoutingModule {
 	}
 
 	private LinkedList<Leg> routeLeg(Facility fromFacility, Facility toFacility, double departureTime) {
-// TODO: adaptieren
 		LinkedList<Leg> legs = new LinkedList<Leg>();
 		TraverseModeSet modeSet = new TraverseModeSet();
 		modeSet.setWalk(true);

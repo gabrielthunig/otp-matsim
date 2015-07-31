@@ -1,21 +1,22 @@
 package routeMatrix;
 
-import static org.junit.Assert.assertNotNull;
-
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.matsim.api.core.v01.Coord;
-import org.matsim.api.core.v01.Id;
-import org.matsim.api.core.v01.population.Leg;
 import org.matsim.core.utils.geometry.CoordImpl;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.geometry.transformations.TransformationFactory;
-import org.matsim.facilities.ActivityFacilities;
-import org.matsim.facilities.ActivityFacility;
-import org.matsim.facilities.FacilitiesUtils;
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.routing.impl.GenericAStarFactory;
 import org.opentripplanner.routing.impl.GraphServiceImpl;
@@ -24,54 +25,109 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
+import playground.gthunig.utils.Coordinate;
+import playground.gthunig.utils.TimeWatch;
+
 public class OTPTimeRouterTest {
 	
-//	@Test
-//	public void testRouterInstantiation() {
-//		assertNotNull(router);
-//		System.out.println("Router instantiated");
-//	}
+	private static PathService pathservice;
 	
-	@Test
-	public void testRouteLeg() {
-	
-	String fromCoordSystem;
-	double minX, minY, maxX, maxY;
-	switch (0) {
-    	case 1:
-    		fromCoordSystem = Constants.TARGET_SCENARIO_COORDINATE_SYSTEM;
-    		minX = 1486664.452457776;
-    		minY = 6904535.315134093;
-    		maxX = 1612601.082948133;
-    		maxY = 6864957.156776331;		
-            break;
-        
-    	default:
-    		fromCoordSystem = TransformationFactory.WGS84_UTM33N;
-    		minX = 387233;
-    		minY = 5821893;
-    		maxX = 392803;
-    		maxY = 5820931;	
-            break;    
-    }
-		
-		Coord fromCoord = new CoordImpl(minX, minY);
-		Coord toCoord = new CoordImpl(maxX, maxY);
-		
-		OTPTimeRouter router = instantiateRouter(TransformationFactory.getCoordinateTransformation( 
-        		fromCoordSystem, TransformationFactory.WGS84));
-		double time = router.routeLegTime(fromCoord, toCoord, Constants.MATRIX_START_TIME);
-		System.out.println(time);
-	}
-	
-	private OTPTimeRouter instantiateRouter(CoordinateTransformation coordinateTransformation) {
+	@BeforeClass
+	public static void initialize() {
 		GraphService graphService = createGraphService(Constants.BASEDIR + Constants.OTP_GRAPH_FILE);
         SPTServiceFactory sptService = new GenericAStarFactory();
-        PathService pathservice = new RetryingPathServiceImpl(graphService, sptService);
-        
-		OTPTimeRouter router = new OTPTimeRouter(pathservice, Constants.DATE, Constants.TIME_ZONE, coordinateTransformation);
+        pathservice = new RetryingPathServiceImpl(graphService, sptService);
+	}
+	
+	@Test
+	public void testRouteWithoutInitialWaitTime() {
 		
-		return router;
+		System.out.println("Stop elapse Time from now");
+		TimeWatch watch = TimeWatch.start();
+			
+		String fromCoordSystem;
+		double fromX, fromY, toX, toY;
+		
+//		Alexanderplatz -> S Greifswalder
+		fromCoordSystem = "EPSG:31468";
+		fromX = 4596113.022;
+		fromY = 5821967.146;
+		toX = 4597730.486;
+		toY = 5823991.927;			
+				
+		Coordinate fromCoord = new Coordinate(fromX, fromY);
+		Coordinate toCoord = new Coordinate(toX, toY);
+			
+		final ExecutorService service;
+	    final Future<long[]>  task;
+	    
+	    service = Executors.newFixedThreadPool(1);        
+	    task    = service.submit(instantiateRouter(TransformationFactory.getCoordinateTransformation( 
+	    		fromCoordSystem, TransformationFactory.WGS84), Constants.MATRIX_START_TIME + 2*60, new ArrayList<Coord>(Arrays.asList(fromCoord, toCoord)), 0));
+	
+	    try {
+	        final long[] accessibilities;
+	        
+	        accessibilities = task.get();
+//	        Assert.assertTrue(accessibilities[1] == 699);
+	        System.out.println(Arrays.toString(accessibilities));
+	    } catch(final InterruptedException ex) {
+	    	ex.printStackTrace();
+	    } catch(final ExecutionException ex) {
+	    	ex.printStackTrace();
+	    }
+	
+	    service.shutdownNow();	
+		
+	    System.out.println("Elapsed Time: " + watch.getElapsedTime());
+	}
+	
+	@Test
+	public void testRouteWithInitialWaitTime() {
+		
+		System.out.println("Stop elapse Time from now");
+		TimeWatch watch = TimeWatch.start();
+			
+		String fromCoordSystem;
+		double fromX, fromY, toX, toY;
+		
+//		Alexanderplatz -> S Greifswalder
+		fromCoordSystem = "EPSG:31468";
+		fromX = 4596113.022;
+		fromY = 5821967.146;
+		toX = 4597730.486;
+		toY = 5823991.927;			
+				
+		Coord fromCoord = new CoordImpl(fromX, fromY);
+		Coord toCoord = new CoordImpl(toX, toY);
+			
+		final ExecutorService service;
+	    final Future<long[]>  task;
+	    
+	    service = Executors.newFixedThreadPool(1);        
+	    task    = service.submit(instantiateRouter(TransformationFactory.getCoordinateTransformation( 
+	    		fromCoordSystem, TransformationFactory.WGS84), Constants.MATRIX_START_TIME, new ArrayList<Coord>(Arrays.asList(fromCoord, toCoord)), 0));
+	
+	    try {
+	        final long[] accessibilities;
+	        
+	        accessibilities = task.get();
+//	        Assert.assertTrue(accessibilities[1] == 699);
+	        System.out.println(Arrays.toString(accessibilities));
+	    } catch(final InterruptedException ex) {
+	    	ex.printStackTrace();
+	    } catch(final ExecutionException ex) {
+	    	ex.printStackTrace();
+	    }
+	
+	    service.shutdownNow();	
+		
+	    System.out.println("Elapsed Time: " + watch.getElapsedTime());
+	}
+	
+	private OTPTimeRouterCallable instantiateRouter(CoordinateTransformation coordinateTransformation, double departureTime, List<Coord> measurePoints, int fromToAll) {
+		return new OTPTimeRouterCallable(pathservice, Constants.DATE, Constants.TIME_ZONE, departureTime,
+																	coordinateTransformation, measurePoints, fromToAll);
 	}
 	
 	private static GraphService createGraphService(String graphFile) {
@@ -88,5 +144,4 @@ public class OTPTimeRouterTest {
             throw new RuntimeException();
         }
     }
-	
 }

@@ -19,8 +19,8 @@ public class Constants {
     public static final String OTP_GRAPH_FILE = "Graph.obj";
     public static final String POPULATION_FILE = "population.xml";
 
-    // Set this as you like - scenario is created from scratch.
     public static final String TARGET_SCENARIO_COORDINATE_SYSTEM = "EPSG:3857";
+    public static final String INPUT_COORDINATE_SYSTEM = "EPSG:31468";
     
     public static final String TIME_ZONE = "Europe/Berlin";
     public static final String DATE = "2015-07-01"; // Wednesday

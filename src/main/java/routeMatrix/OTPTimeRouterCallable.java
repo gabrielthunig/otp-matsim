@@ -49,27 +49,31 @@ public class OTPTimeRouterCallable implements Callable<long[]> {
 	
 	double departureTime;
 	
-	public OTPTimeRouterCallable(Config config, PathService pathservice, Coord departure, List<Coord> destinations, CoordinateTransformation ct) {
+	public OTPTimeRouterCallable(PathService pathservice, String dateString, String timeZoneString, double departureTime, Coord departure, List<Coord> destinations, CoordinateTransformation ct) {
 		this.pathservice = pathservice;
 		this.transitScheduleToPathServiceCt = ct;
-		this.timeZone = TimeZone.getTimeZone(config.timezone);
+		this.timeZone = TimeZone.getTimeZone(timeZoneString);
 		try {
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 			df.setTimeZone(timeZone);
-			this.day = df.parse(config.date);
+			this.day = df.parse(dateString);
 		} catch (ParseException e) {
 			throw new RuntimeException(e);
 		}
 		this.destinations = destinations;
 		this.departure = departure;
-		this.departureTime = config.startMeasuringTime;
+		this.departureTime = departureTime;
 	}
 	
 	@Override
 	public long[] call() throws Exception {
 		long[] accessibilities = new long[destinations.size()];
 		for (int actual = 0; actual < accessibilities.length; actual++) {
-			accessibilities[actual] = routeLegTime(departure, destinations.get(actual));
+				try {
+					accessibilities[actual] = routeLegTime(departure, destinations.get(actual));
+				} catch (Exception e) {
+					accessibilities[actual] = -1;
+				}
 		}
 		return accessibilities;
 	}	

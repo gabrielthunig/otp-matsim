@@ -8,7 +8,7 @@ public class Constants {
 	 * BASEDIR should include Openstreetmap data in a file named *.osm or *.pbf
 	 * and a zip file with GTFS data
 	 */
-    public static final String BASEDIR = "input/routeTest/newTest/";
+    public static final String BASEDIR = "input/accessibility/";
     /** Created by ExtractNetwork*/
     public static final String TRANSIT_SCHEDULE_FILE = "extracted-transitschedule.xml";
     /** Created by ExtractNetwork*/

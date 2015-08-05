@@ -43,33 +43,33 @@ public class OTPTimeRouterCallable implements Callable<long[]> {
 
 	private CoordinateTransformation transitScheduleToPathServiceCt;
 	
-	private List<Coord> measurePoints;
+	private Coord departure;
 	
-	private int fromToAllPoint;
+	private List<Coord> destinations;
 	
 	double departureTime;
 	
-	public OTPTimeRouterCallable(PathService pathservice, String dateString, String timeZoneString, double departureTime, CoordinateTransformation ct, List<Coord> measurePoints, int fromToAllPoint) {
+	public OTPTimeRouterCallable(Config config, PathService pathservice, Coord departure, List<Coord> destinations, CoordinateTransformation ct) {
 		this.pathservice = pathservice;
 		this.transitScheduleToPathServiceCt = ct;
-		this.timeZone = TimeZone.getTimeZone(timeZoneString);
+		this.timeZone = TimeZone.getTimeZone(config.timezone);
 		try {
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 			df.setTimeZone(timeZone);
-			this.day = df.parse(dateString);
+			this.day = df.parse(config.date);
 		} catch (ParseException e) {
 			throw new RuntimeException(e);
 		}
-		this.measurePoints = measurePoints;
-		this.fromToAllPoint = fromToAllPoint;
-		this.departureTime = departureTime;
+		this.destinations = destinations;
+		this.departure = departure;
+		this.departureTime = config.startMeasuringTime;
 	}
 	
 	@Override
 	public long[] call() throws Exception {
-		long[] accessibilities = new long[measurePoints.size()];
+		long[] accessibilities = new long[destinations.size()];
 		for (int actual = 0; actual < accessibilities.length; actual++) {
-			accessibilities[actual] = routeLegTime(measurePoints.get(fromToAllPoint), measurePoints.get(actual));
+			accessibilities[actual] = routeLegTime(departure, destinations.get(actual));
 		}
 		return accessibilities;
 	}	

@@ -1,6 +1,5 @@
 package routeMatrix;
 
-import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,8 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.core.utils.geometry.CoordImpl;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
@@ -25,8 +22,7 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
-import playground.gthunig.utils.Coordinate;
-import playground.gthunig.utils.TimeWatch;
+import com.vividsolutions.jts.geom.Coordinate;
 
 public class OTPTimeRouterTest {
 	
@@ -63,7 +59,7 @@ public class OTPTimeRouterTest {
 	    
 	    service = Executors.newFixedThreadPool(1);        
 	    task    = service.submit(instantiateRouter(TransformationFactory.getCoordinateTransformation( 
-	    		fromCoordSystem, TransformationFactory.WGS84), Constants.MATRIX_START_TIME + 2*60, new ArrayList<Coord>(Arrays.asList(fromCoord, toCoord)), 0));
+	    		fromCoordSystem, TransformationFactory.WGS84), Constants.MATRIX_START_TIME + 2*60, new ArrayList<Coordinate>(Arrays.asList(fromCoord, toCoord)), 0));
 	
 	    try {
 	        final long[] accessibilities;

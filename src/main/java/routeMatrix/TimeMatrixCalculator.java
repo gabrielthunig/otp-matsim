@@ -12,7 +12,6 @@ import java.util.concurrent.Future;
 
 import org.matsim.api.core.v01.Coord;
 import org.matsim.core.utils.geometry.CoordImpl;
-import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.geometry.transformations.TransformationFactory;
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.routing.impl.GenericAStarFactory;
@@ -22,14 +21,9 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
-import playground.gthunig.utils.CSVReader;
-import playground.gthunig.utils.TimeWatch;
-
 public class TimeMatrixCalculator {
 
 	public static void main(String[] args) {
-		
-TimeWatch watch = TimeWatch.start();
 		
 		String fromCoordSystem = TransformationFactory.DHDN_GK4;
 		
@@ -42,40 +36,89 @@ TimeWatch watch = TimeWatch.start();
         SPTServiceFactory sptService = new GenericAStarFactory();
         PathService pathservice = new RetryingPathServiceImpl(graphService, sptService);
         
+//      TODO: evtl erst mit späteren berechnungen anfangen wenn erste ergebnisse da sind, alpha
+        
 	    ExecutorService pool = Executors.newFixedThreadPool(measurePoints.size());
 	    ArrayList<Future<long[]>> futures = new ArrayList<Future<long[]>>();
+	    List<long[]> output = new ArrayList<long[]>();
+	    int exectutedCallablesAtTime = 0;
+	    int callablesExecuted = 0;
+	    
 	    for (int i = 0; i < measurePoints.size(); i++) {
-	    	Callable<long[]> callable = new OTPTimeRouterCallable(pathservice, Constants.DATE, Constants.TIME_ZONE, 
-	    			Constants.MATRIX_START_TIME, TransformationFactory.getCoordinateTransformation( 
-	        		fromCoordSystem, TransformationFactory.WGS84), measurePoints, i);
+	    	while (exectutedCallablesAtTime >= 8) {
+	    		try {
+					output.add(futures.get(callablesExecuted).get());
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				}
+	    		
+//	    	    TODO: output schreiben in einzelne dateinen, alpha
+	    		
+	    		InputsCSVWriter writer = new InputsCSVWriter("output/accessibility_Berlin/singleFromToAllFiles/fromToAllAccessibilities_" + callablesExecuted + ".csv", " ");
+	    		
+	    		for (int column = 0; column < output.get(callablesExecuted).length; column++) {
+//	    			for (int row = 0; row < matrix[column].length; row++) {
+	    				writer.writeField(callablesExecuted);
+	    				writer.writeField(column);
+	    				writer.writeField((output.get(callablesExecuted))[column]);
+//	    			}
+	    			writer.writeNewLine();
+	    		}
+	    		
+	    		writer.close();
+	    		callablesExecuted++;
+	    		exectutedCallablesAtTime--;
+	    	}
+	    	Callable<long[]> callable = new OTPTimeRouterCallable(new Config(), pathservice, measurePoints.get(i), measurePoints, 
+	    			TransformationFactory.getCoordinateTransformation( 
+	        		fromCoordSystem, TransformationFactory.WGS84));
 	    	Future<long[]> future = pool.submit(callable);
 	    	futures.add(future);
+	    	exectutedCallablesAtTime++;
 	    }
-	    List<long[]> output = new ArrayList<long[]>();
-	    for (Future<long[]> future : futures) {
+	    for (int i = callablesExecuted; i < measurePoints.size(); i++) {
 	    	try {
-				output.add(future.get());
+				output.add(futures.get(callablesExecuted).get());
 			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 	    }
 		
-//		CSVWriter writer = new CSVWriter("output/accessibilities_output.csv");
-//		
-//		for (int column = 0; column < matrix.length; column++) {
-//			for (int row = 0; row < matrix[column].length; row++) {
-//				writer.writeField(matrix[column][row]);
-//			}
-//			writer.writeNewLine();
-//		}
-//		
-//		writer.close();
+//	    TODO: output gesammt in eine datei schreiben
+	    
+	    InputsCSVWriter idWriter = new InputsCSVWriter("output/accessibility_Berlin/ids.csv", ",");
 		
-		System.out.println("elapsed Time  in Minutes: " + watch.timeInMin());
+	    idWriter.writeField("id");
+	    idWriter.writeField("x");
+	    idWriter.writeField("y");
+	    
+	    for (int j = 0; j < output.size(); j++) {
+	    	idWriter.writeField(j);
+	    	idWriter.writeField(measurePoints.get(j).getX());	
+	    	idWriter.writeField(measurePoints.get(j).getY());
+	    	idWriter.writeNewLine();
+	    }
+		
+	    idWriter.close();
+		
+	    InputsCSVWriter writer = new InputsCSVWriter("output/accessibility_Berlin/allAccessibilities/accessibilities_berlin.csv", " ");
+		
+	    for (int j = 0; j < output.size(); j++) {
+	    	for (int column = 0; column < output.get(j).length; column++) {
+	    		writer.writeField(j);
+	    		writer.writeField(column);	
+	    		writer.writeField((output.get(j))[column]);
+//				
+	    		writer.writeNewLine();
+	    	}
+	    }
+		
+	    writer.close();
+		
 	}
 	
 	private static List<Coord> getFacilities(String inputFile) {
-		CSVReader reader = new CSVReader(inputFile);
+		CSVReader reader = new CSVReader(inputFile, ",");
 		List<Coord> facilities = new ArrayList<Coord>();
 		String[] line = null;
 		while ((line = reader.readLine()) != null) {

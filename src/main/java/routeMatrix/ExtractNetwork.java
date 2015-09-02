@@ -14,7 +14,7 @@ public class ExtractNetwork {
     public static void main(String[] args) {
         ReadGraph readGraph = new ReadGraph(OTPTripRouterFactory.createGraphService(Constants.BASEDIR + Constants.OTP_GRAPH_FILE),
                 TransformationFactory.getCoordinateTransformation(TransformationFactory.WGS84, 
-                		Constants.TARGET_SCENARIO_COORDINATE_SYSTEM),
+                		Constants.INPUT_COORDINATE_SYSTEM),
                 		Constants.DATE,
                 		Constants.TIME_ZONE,
                 		Constants.SCHEDULE_END_TIME_ON_FOLLOWING_DATE);

@@ -28,26 +28,32 @@ public class TimeMatrixCalculator {
 
 	public static void main(String[] args) {
 		
+//		final String baseDir = args[0];
+//		final String outputDir = args[1];
+		final String baseDir = "input/accessibility_berlin_2/";
+		final String outputDir = "output/accessibility_berlin/";
+		
 		String fromCoordSystem = Constants.INPUT_COORDINATE_SYSTEM;
 		
-		String inputFile = (Constants.BASEDIR + Constants.INPUT_FILE);
+		String inputFile = (baseDir + Constants.INPUT_FILE);
 		
 		List<Coord> measurePoints = getFacilities(inputFile);
 		
-		GraphService graphService = createGraphService(Constants.BASEDIR + Constants.OTP_GRAPH_FILE);
+		GraphService graphService = createGraphService(baseDir + Constants.OTP_GRAPH_FILE);
         SPTServiceFactory sptService = new GenericAStarFactory();
         PathService pathservice = new RetryingPathServiceImpl(graphService, sptService);
         
         System.out.println(measurePoints.size());
         
-        ExecutorService pool = Executors.newFixedThreadPool(16);
+        ExecutorService pool = Executors.newFixedThreadPool(8);
 	    ArrayList<Future<long[]>> futures = new ArrayList<Future<long[]>>();
 	    List<long[]> output = new ArrayList<long[]>();
 	    
 	    CoordinateTransformation ct = TransformationFactory.getCoordinateTransformation( 
 	    		fromCoordSystem, TransformationFactory.WGS84);
 	    
-	    for (int i = 0; i < measurePoints.size(); i++) {
+//	    TODO
+	    for (int i = 0; i < 1; i++) {//measurePoints.size(); i++) {
 	    	Callable<long[]> callable = new OTPTimeRouterCallable(pathservice, Constants.DATE, Constants.TIME_ZONE, 
 	    			Constants.MATRIX_START_TIME, measurePoints.get(i), measurePoints, ct);
 	    	Future<long[]> future = pool.submit(callable);
@@ -60,7 +66,7 @@ public class TimeMatrixCalculator {
 			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
-	    	InputsCSVWriter writer = new InputsCSVWriter("output/accessibility_Berlin/singleFromToAllFiles/fromToAllAccessibilities_" + i + ".csv", " ");
+	    	InputsCSVWriter writer = new InputsCSVWriter(outputDir + "fromToAllAccessibilities_" + i + ".csv", " ");
     		
     		for (int column = 0; column < output.get(i).length; column++) {
     				writer.writeField(i);
@@ -72,7 +78,7 @@ public class TimeMatrixCalculator {
     		writer.close();
 	    }
 		
-	    InputsCSVWriter idWriter = new InputsCSVWriter("output/accessibility_Berlin/ids.csv", ",");
+	    InputsCSVWriter idWriter = new InputsCSVWriter(outputDir + "ids.csv", ",");
 		
 	    idWriter.writeField("id");
 	    idWriter.writeField("x");
@@ -88,7 +94,7 @@ public class TimeMatrixCalculator {
 		
 	    idWriter.close();
 		
-	    InputsCSVWriter writer = new InputsCSVWriter("output/accessibility_Berlin/allAccessibilities/accessibility_Berlin.csv", " ");
+	    InputsCSVWriter writer = new InputsCSVWriter(outputDir + "accessibility_Berlin.csv", " ");
 		
 	    for (int j = 0; j < output.size(); j++) {
 	    	for (int column = 0; column < output.get(j).length; column++) {

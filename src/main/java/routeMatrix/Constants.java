@@ -9,7 +9,7 @@ public class Constants {
 	 * and a zip file with GTFS data
 	 */
 //    public static final String BASEDIR = "input/accessibility_berlin/";
-	public static final String BASEDIR = "input/accessibility_berlin_2/";
+//	public static final String BASEDIR = "input/accessibility_berlin_2/";
     /** Created by ExtractNetwork*/
     public static final String TRANSIT_SCHEDULE_FILE = "extracted-transitschedule.xml";
     /** Created by ExtractNetwork*/

@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.matsim.api.core.v01.Coord;
-import org.matsim.core.utils.geometry.CoordImpl;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.geometry.transformations.TransformationFactory;
 import org.opentripplanner.routing.graph.Graph;
@@ -134,7 +133,7 @@ public class TimeMatrixCalculator {
 				x = Double.parseDouble(line[0]);
 				y = Double.parseDouble(line[1]);
 				if (x > 0 && y > 0) {
-					Coord actual = new CoordImpl(x, y);
+					Coord actual = new Coord(x, y);
 					facilities.add(actual);
 				}
 			} catch (Exception e) {

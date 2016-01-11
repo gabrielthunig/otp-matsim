@@ -33,10 +33,6 @@ public final class InputsCSVWriter {
 			throw new RuntimeException("writer could not be instantiated") ;
 		}
 
-		if ( writer==null ) {
-			throw new RuntimeException( "writer is null") ;
-		}
-
 		log.info("... done!");
 	}
 

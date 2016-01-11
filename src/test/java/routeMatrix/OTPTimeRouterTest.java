@@ -1,19 +1,9 @@
 package routeMatrix;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.matsim.api.core.v01.Coord;
-import org.matsim.core.utils.geometry.CoordImpl;
+import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.geometry.transformations.TransformationFactory;
 import org.opentripplanner.routing.graph.Graph;
@@ -24,20 +14,28 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class OTPTimeRouterTest {
 	
 	private static PathService pathservice;
-	
-	@BeforeClass
+
+    @BeforeClass
 	public static void initialize() {
 		GraphService graphService = createGraphService(Constants.BASEDIR + Constants.OTP_GRAPH_FILE);
         SPTServiceFactory sptService = new GenericAStarFactory();
         pathservice = new RetryingPathServiceImpl(graphService, sptService);
 	}
-	
-	@Test
+
+    @Test
 	public void testRouteWithoutInitialWaitTime() {
 			
 		String fromCoordSystem;
@@ -50,8 +48,8 @@ public class OTPTimeRouterTest {
 		toX = 4597730.486;
 		toY = 5823991.927;			
 				
-		Coord fromCoord = new CoordImpl(fromX, fromY);
-		Coord toCoord = new CoordImpl(toX, toY);
+		Coord fromCoord = CoordUtils.createCoord(fromX, fromY);
+		Coord toCoord = CoordUtils.createCoord(toX, toY);
 			
 		final ExecutorService service;
 	    final Future<long[]>  task;
@@ -88,8 +86,8 @@ public class OTPTimeRouterTest {
 		toX = 4597730.486;
 		toY = 5823991.927;			
 				
-		Coord fromCoord = new CoordImpl(fromX, fromY);
-		Coord toCoord = new CoordImpl(toX, toY);
+		Coord fromCoord = CoordUtils.createCoord(fromX, fromY);
+		Coord toCoord = CoordUtils.createCoord(toX, toY);
 			
 		final ExecutorService service;
 	    final Future<long[]>  task;

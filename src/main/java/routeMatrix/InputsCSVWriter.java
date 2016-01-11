@@ -1,17 +1,17 @@
 package routeMatrix;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.core.utils.io.IOUtils;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * @author dziemke
  */
 public final class InputsCSVWriter {
-	private static final Logger log = Logger.getLogger(InputsCSVWriter.class);
+	private static final Logger log = Logger.getLogger(InputsCSVWriter.class.getName());
 
 //	private static final String SEPARATOR = ",";
 	private String separator;

@@ -1,15 +1,9 @@
 package otp;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.matsim.api.core.v01.network.Network;
-import org.matsim.core.router.TripRouterFactory;
-import org.matsim.core.router.RoutingContext;
 import org.matsim.core.router.TripRouter;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
-import org.opentripplanner.routing.algorithm.GenericAStar;
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.routing.impl.GenericAStarFactory;
 import org.opentripplanner.routing.impl.GraphServiceImpl;
@@ -18,8 +12,12 @@ import org.opentripplanner.routing.impl.SPTServiceFactory;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.services.PathService;
 
+import javax.inject.Provider;
+import java.io.File;
+import java.io.IOException;
+
 public final class OTPTripRouterFactory implements
-		TripRouterFactory {
+		Provider<TripRouter> {
 	// TripRouterFactory: Matsim interface for routers
 	
 	private CoordinateTransformation ct;
@@ -69,7 +67,7 @@ public final class OTPTripRouterFactory implements
 
 
     @Override
-	public TripRouter instantiateAndConfigureTripRouter(RoutingContext iterationContext) {
+	public TripRouter get() {
 		TripRouter tripRouter = new TripRouter();
 		tripRouter.setRoutingModule("pt", new OTPRoutingModule(pathservice, transitSchedule, 
 				matsimNetwork, day, timeZone, ct));

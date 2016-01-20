@@ -1,14 +1,18 @@
 package routeMatrix;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opentripplanner.analyst.batch.Individual;
 import org.opentripplanner.analyst.batch.SyntheticRasterPopulation;
+import org.opentripplanner.common.geometry.SphericalDistanceLibrary;
 import org.opentripplanner.common.model.GenericLocation;
 import org.opentripplanner.routing.algorithm.AStar;
 import org.opentripplanner.routing.core.RoutingRequest;
 import org.opentripplanner.routing.graph.Graph;
+import org.opentripplanner.routing.graph.Vertex;
 import org.opentripplanner.routing.impl.InputStreamGraphSource;
 import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.spt.GraphPath;
@@ -19,6 +23,7 @@ import org.opentripplanner.standalone.OTPServer;
 
 import java.io.File;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Iterator;
 
 public class OTPTimeRouterTest {
@@ -38,13 +43,13 @@ public class OTPTimeRouterTest {
         if (!new File(inputRoot + graphName).exists()) {
             OTPMain.main(new String[]{"--build", inputRoot});
         }
-        graph = OTPTimeRouter.createGraph(inputRoot + graphName);
+        graph = Graph.load(new File(inputRoot + graphName), Graph.LoadLevel.FULL);
 
 //        GraphService graphService = new GraphService();
-//        graphService.registerGraph("", InputStreamGraphSource.newFileGraphSource("", new File(inputRoot + graphName), Graph.LoadLevel.FULL));
+//        graphService.registerGraph("", InputStreamGraphSource.newFileGraphSource("", new File(inputRoot), Graph.LoadLevel.FULL));
 //        OTPServer otpServer = new OTPServer(new CommandLineParameters(), graphService);
 ////        Graph graph = graphService.getRouter().graph;
-//        Graph graph = otpServer.getRouter((String)null).graph;
+//        graph = otpServer.getRouter((String)null).graph;
 
         double left = 13.1949;
         double right = 13.5657;
@@ -52,7 +57,7 @@ public class OTPTimeRouterTest {
         double top = 52.6341;
 
         final Calendar calendar = Calendar.getInstance();
-        calendar.set(2015, 8, 15);
+        calendar.set(2016, 8, 15);
 
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
         rasterPop.left = left;
@@ -66,23 +71,36 @@ public class OTPTimeRouterTest {
         for (Individual individual : rasterPop) {
             RoutingRequest request = new RoutingRequest();
             request.batch = true;
-            request.dateTime = calendar.getTime().getTime();
+            request.setDateTime(calendar.getTime());
             request.from = new GenericLocation(individual.lat, individual.lon);
             request.setRoutingContext(graph);
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (Individual individual2 : rasterPop) {
+
+                    double searchRadiusLat = SphericalDistanceLibrary.metersToDegrees(500.0D);
+
+                    Coordinate c = new Coordinate(individual2.lon, individual2.lat);
+                    Envelope env = new Envelope(c);
+                    double xscale = Math.cos(c.y * 3.141592653589793D / 180.0D);
+                    env.expandBy(searchRadiusLat / xscale, searchRadiusLat);
+                    Collection vertices = this.graph.streetIndex.getVerticesForEnvelope(env);
+                    Vertex destination = (Vertex)vertices.iterator().next();
+
+                    GraphPath path = spt.getPath(destination, false);
+                    // look in path
+                    Assert.assertNotNull(path);
                     // TODO: write output
                 }
             }
 
         }
 
-        GraphPath path = null;
+//        GraphPath path = null;
 
 //        path = spt.getPath(stop_b, false);
-        Assert.assertNotNull(path);
-        Assert.assertEquals(6, path.states.size());
+//        Assert.assertNull(path);
+//        Assert.assertEquals(6, path.states.size());
 
 //        // A to C
 //        request.setRoutingContext(graph, stop_a, stop_c);

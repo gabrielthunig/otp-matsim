@@ -28,19 +28,21 @@ public class CreatePtMatrixFromOTP {
         double minY=52.3926;
         double maxY=52.6341;
 
-        String outputRoot = "input/Graph.obj";
-
-//		OTPMain.main(new String[]{"--build", outputRoot});
+        String inputRoot = "input/";
+        String graphName = "Graph.obj";
+        if (!new File(inputRoot + graphName).exists()) {
+            OTPMain.main(new String[]{"--build", inputRoot});
+        }
 
         GraphService graphService = new GraphService();
-        graphService.registerGraph("", InputStreamGraphSource.newFileGraphSource("", new File(outputRoot), Graph.LoadLevel.FULL));
+        graphService.registerGraph("", InputStreamGraphSource.newFileGraphSource("", new File(inputRoot), Graph.LoadLevel.FULL));
         OTPServer otpServer = new OTPServer(new CommandLineParameters(), graphService);
         final OtpsEntryPoint otp = new OtpsEntryPoint(otpServer);
         final OtpsCsvOutput csvOutput = otp.createCSVOutput();
         long t0 = System.currentTimeMillis();
         final OtpsPopulation gridPopulation = otp.createGridPopulation(maxY, minY, minX, maxX, 5, 5);
         final Calendar calendar = Calendar.getInstance();
-        calendar.set(2015, 8, 15);
+        calendar.set(2016, 8, 15);
         StreamSupport.stream(gridPopulation.spliterator(), true).forEach(otpsIndividual -> {
             OtpsRoutingRequest request = otp.createRequest();
             request.setDateTime(calendar.getTime());

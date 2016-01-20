@@ -156,13 +156,4 @@ public class OTPTimeRouter {
         return (paths.get(0).getDuration() + initialWaitTime);
     }
 
-    public static Graph createGraph(String graphFile) {
-        try {
-            return Graph.load(new File(graphFile), Graph.LoadLevel.FULL);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
 }

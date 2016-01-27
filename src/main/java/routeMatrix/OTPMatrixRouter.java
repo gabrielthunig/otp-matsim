@@ -33,25 +33,25 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-    private final static String inputRoot = "input/";
-    private final static String graphName = "Graph.obj";
-    private final static String outputDir = "output/";
+    private final static String INPUT_ROOT = "input/";
+    private final static String GRAPH_NAME = "Graph.obj";
+    private final static String OUTPUT_DIR = "output/";
 
-    private final static String timeZoneString = "Europe/Berlin";
-    private final static String dateString = "2016-08-01";
-    private final static int departureTime = 8 * 60 * 60;
+    private final static String TIME_ZONE_STRING = "Europe/Berlin";
+    private final static String DATE_STRING = "2016-08-01";
+    private final static int DEPARTURE_TIME = 8 * 60 * 60;
 
-    private final static double left = 13.1949;
-    private final static double right = 13.5657;
-    private final static double bottom = 52.3926;
-    private final static double top = 52.6341;
-    private final static int rasterColumnCount = 10;
-    private final static int rasterRowCount = 10;
+    private final static double LEFT = 13.1949;
+    private final static double RIGHT = 13.5657;
+    private final static double BOTTOM = 52.3926;
+    private final static double TOP = 52.6341;
+    private final static int RASTER_COLUMN_COUNT = 10;
+    private final static int RASTER_ROW_COUNT = 10;
 
-    private final static double fromLat = 52.521918;
-    private final static double fromLon = 13.413215;
-    private final static double toLat = 52.538186;
-    private final static double toLon = 13.4356;
+    private final static double FROM_LAT = 52.521918;
+    private final static double FROM_LON = 13.413215;
+    private final static double TO_LAT = 52.538186;
+    private final static double TO_LON = 13.4356;
     //editable constants end
 
     public static void main(String[] args) {
@@ -62,9 +62,9 @@ public class OTPMatrixRouter {
     }
 
     public static boolean buildGraph() {
-        if (!new File(inputRoot + graphName).exists()) {
-            log.info("No graphfile found. Building the graph from content from: " + new File(inputRoot).getAbsolutePath() + " ...");
-            OTPMain.main(new String[]{"--build", inputRoot});
+        if (!new File(INPUT_ROOT + GRAPH_NAME).exists()) {
+            log.info("No graphfile found. Building the graph from content from: " + new File(INPUT_ROOT).getAbsolutePath() + " ...");
+            OTPMain.main(new String[]{"--build", INPUT_ROOT});
             log.info("Building the graph finished.");
             return true;
         } else {
@@ -76,7 +76,7 @@ public class OTPMatrixRouter {
 
         log.info("Loading the graph...");
         try {
-            return Graph.load(new File(inputRoot + graphName), Graph.LoadLevel.FULL);
+            return Graph.load(new File(INPUT_ROOT + GRAPH_NAME), Graph.LoadLevel.FULL);
         } catch (IOException | ClassNotFoundException e) {
             log.info("Error while loading the Graph.");
             e.printStackTrace();
@@ -88,21 +88,21 @@ public class OTPMatrixRouter {
         log.info("Preparing settings for routing...");
         final Calendar calendar = Calendar.getInstance();
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        TimeZone timeZone = TimeZone.getTimeZone(timeZoneString);
+        TimeZone timeZone = TimeZone.getTimeZone(TIME_ZONE_STRING);
         df.setTimeZone(timeZone);
         calendar.setTimeZone(timeZone);
         try {
-            calendar.setTime(df.parse(dateString));
+            calendar.setTime(df.parse(DATE_STRING));
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        calendar.add(Calendar.SECOND, departureTime);
+        calendar.add(Calendar.SECOND, DEPARTURE_TIME);
         log.info("Preparing settings for routing finished.");
         return calendar;
     }
 
     private static InputsCSVWriter prepareWriter() {
-        InputsCSVWriter writer = new InputsCSVWriter(outputDir + "accessibility_Berlin.csv", " ");
+        InputsCSVWriter writer = new InputsCSVWriter(OUTPUT_DIR + "accessibility_Berlin.csv", " ");
         writer.writeField("fromCoord.lat");
         writer.writeField("fromCoord.lon");
         writer.writeField("toCoord.lat");
@@ -123,12 +123,12 @@ public class OTPMatrixRouter {
         Calendar calendar = prepareCalendarSettings();
 
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
-        rasterPop.left = left;
-        rasterPop.right = right;
-        rasterPop.top = top;
-        rasterPop.bottom = bottom;
-        rasterPop.cols = rasterColumnCount;
-        rasterPop.rows = rasterRowCount;
+        rasterPop.left = LEFT;
+        rasterPop.right = RIGHT;
+        rasterPop.top = TOP;
+        rasterPop.bottom = BOTTOM;
+        rasterPop.cols = RASTER_COLUMN_COUNT;
+        rasterPop.rows = RASTER_ROW_COUNT;
         rasterPop.setup();
 
         InputsCSVWriter writer = prepareWriter();
@@ -198,15 +198,15 @@ public class OTPMatrixRouter {
         request.setMaxWalkDistance(Double.MAX_VALUE);
         request.batch = true;
         request.setDateTime(calendar.getTime());
-        request.from = new GenericLocation(fromLat, fromLon);
+        request.from = new GenericLocation(FROM_LAT, FROM_LON);
         request.setRoutingContext(graph);
         ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
         if (spt != null) {
                 long t0 = System.currentTimeMillis();
 
-                writer.writeField(fromLat);
-                writer.writeField(fromLon);
-                route(toLat, toLon, spt, calendar, writer);
+                writer.writeField(FROM_LAT);
+                writer.writeField(FROM_LON);
+                route(TO_LAT, TO_LON, spt, calendar, writer);
 
                 long t1 = System.currentTimeMillis();
                 System.out.printf("Time: %d\n", t1-t0);

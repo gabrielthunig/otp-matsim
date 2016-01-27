@@ -1,20 +1,13 @@
-package routeMatrix;
+package routeMatrix.singleRoute_deprecated;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import org.matsim.api.core.v01.Coord;
-import org.matsim.core.utils.geometry.CoordinateTransformation;
-import org.matsim.core.utils.geometry.transformations.TransformationFactory;
 import org.opentripplanner.routing.graph.Graph;
-import org.opentripplanner.routing.services.GraphService;
+import routeMatrix.CSVReader;
 
 public class TimeMatrixCalculator {
 

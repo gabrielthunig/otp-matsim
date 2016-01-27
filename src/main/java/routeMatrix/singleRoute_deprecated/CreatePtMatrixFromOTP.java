@@ -1,4 +1,4 @@
-package routeMatrix;
+package routeMatrix.singleRoute_deprecated;
 
 import org.opentripplanner.common.model.GenericLocation;
 import org.opentripplanner.routing.algorithm.AStar;

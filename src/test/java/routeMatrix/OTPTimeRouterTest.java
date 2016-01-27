@@ -11,20 +11,19 @@ import org.opentripplanner.common.geometry.SphericalDistanceLibrary;
 import org.opentripplanner.common.model.GenericLocation;
 import org.opentripplanner.routing.algorithm.AStar;
 import org.opentripplanner.routing.core.RoutingRequest;
+import org.opentripplanner.routing.core.State;
+import org.opentripplanner.routing.graph.Edge;
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.routing.graph.Vertex;
-import org.opentripplanner.routing.impl.InputStreamGraphSource;
-import org.opentripplanner.routing.services.GraphService;
 import org.opentripplanner.routing.spt.GraphPath;
 import org.opentripplanner.routing.spt.ShortestPathTree;
-import org.opentripplanner.standalone.CommandLineParameters;
 import org.opentripplanner.standalone.OTPMain;
-import org.opentripplanner.standalone.OTPServer;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.TimeZone;
 
 public class OTPTimeRouterTest {
 
@@ -57,7 +56,13 @@ public class OTPTimeRouterTest {
         double top = 52.6341;
 
         final Calendar calendar = Calendar.getInstance();
-        calendar.set(2016, 8, 15);
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        TimeZone timeZone = TimeZone.getTimeZone("Europe/Berlin");
+        df.setTimeZone(timeZone);
+        calendar.setTimeZone(timeZone);
+        calendar.setTime(df.parse("2016-08-01"));
+        int departureTime = 8 * 60 * 60;
+        calendar.add(Calendar.SECOND, departureTime);
 
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
         rasterPop.left = left;
@@ -84,16 +89,56 @@ public class OTPTimeRouterTest {
                     Envelope env = new Envelope(c);
                     double xscale = Math.cos(c.y * 3.141592653589793D / 180.0D);
                     env.expandBy(searchRadiusLat / xscale, searchRadiusLat);
-                    Collection vertices = this.graph.streetIndex.getVerticesForEnvelope(env);
-                    Vertex destination = (Vertex)vertices.iterator().next();
+                    Collection vertices = graph.streetIndex.getVerticesForEnvelope(env);
+                    Vertex destination = (Vertex) vertices.iterator().next();
 
                     GraphPath path = spt.getPath(destination, false);
                     // look in path
-                    Assert.assertNotNull(path);
-                    // TODO: write output
-                }
-            }
 
+
+                    long initialWaitTime = Long.MIN_VALUE;
+                    long elapsedTime = 0;
+                    long transitTime = 0;
+                    long walkTime = 0;
+
+                    path.dump();
+                    if (!path.states.isEmpty()) {
+                        initialWaitTime = ((path.states.getFirst().getTimeInMillis() - calendar.getTime().getTime()) / 1000);
+                        System.out.println("initial wait time: " + initialWaitTime);
+                    }
+
+                    for (State state : path.states) {
+                        System.out.println("");
+                        System.out.println("State infos start:");
+                        System.out.println("state elapsedTime: " + elapsedTime);
+                        System.out.println("state walkdistance: " + state.getWalkDistance());
+                        System.out.println("isOnBoard: " + state.isOnboard());
+
+                        Edge backEdge = state.getBackEdge();
+                        if (backEdge != null && backEdge.getFromVertex() != null) {
+                            System.out.println("backEdge = " + backEdge);
+                            System.out.println("Mode: " + backEdge.getName());
+                            System.out.println("backEdge.getFromVertex() = " + backEdge.getFromVertex());
+//                            System.out.println("Name: " + backEdge.getFromVertex().getName());
+                            System.out.println("Label" + backEdge.getFromVertex().getLabel());
+                            System.out.println("Lat: " + backEdge.getFromVertex().getLat() + " Lon: " + backEdge.getFromVertex().getLon());
+                            System.out.println("x: " + backEdge.getFromVertex().getX() + " y: " + backEdge.getFromVertex().getY());
+
+                            if (state.isOnboard()) transitTime += state.getActiveTime() - elapsedTime;
+                            else walkTime += state.getActiveTime() - elapsedTime;
+
+                            elapsedTime = state.getActiveTime();
+
+
+                            Assert.assertNotNull(path);
+                            // TODO: write output
+                        } else {
+                            System.out.println("null");
+                        }
+                    }
+                }
+
+            }
         }
 
 //        GraphPath path = null;

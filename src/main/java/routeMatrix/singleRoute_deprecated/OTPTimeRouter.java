@@ -1,4 +1,4 @@
-package routeMatrix;
+package routeMatrix.singleRoute_deprecated;
 
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.population.Leg;

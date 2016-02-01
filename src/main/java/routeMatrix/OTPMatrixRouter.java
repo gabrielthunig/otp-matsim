@@ -159,7 +159,6 @@ public class OTPMatrixRouter {
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (Individual toIndividual : rasterPop) {
-                    System.out.println("iteration.next");
                     long t0 = System.currentTimeMillis();
 
                     if (fromIndividual.lat == toIndividual.lat && fromIndividual.lon == toIndividual.lon) continue;

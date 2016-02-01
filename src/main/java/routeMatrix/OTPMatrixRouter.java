@@ -33,21 +33,22 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-    private final static String INPUT_ROOT = "input/";
+    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
     private final static String GRAPH_NAME = "Graph.obj";
-    private final static String OUTPUT_DIR = "output/";
+    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
 
     private final static String TIME_ZONE_STRING = "Europe/Berlin";
-    private final static String DATE_STRING = "2016-08-01";
+    private final static String DATE_STRING = "2016-02-01";
     private final static int DEPARTURE_TIME = 8 * 60 * 60;
 
     private final static double LEFT = 13.1949;
     private final static double RIGHT = 13.5657;
-    private final static double BOTTOM = 52.3926;
-    private final static double TOP = 52.6341;
-    private final static int RASTER_COLUMN_COUNT = 10;
-    private final static int RASTER_ROW_COUNT = 10;
+    private final static double BOTTOM = 52.3926; // 52.3926 13.1949
+    private final static double TOP = 52.6341; // 52.6341 13.5657
+    private final static int RASTER_COLUMN_COUNT = 2;
+    private final static int RASTER_ROW_COUNT = 2;
 
+    // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;
     private final static double FROM_LON = 13.413215;
     private final static double TO_LAT = 52.538186;

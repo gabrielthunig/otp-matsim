@@ -21,9 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * Created by gthunig
@@ -33,9 +31,11 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
+//    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
+    private final static String INPUT_ROOT = "input/";
     private final static String GRAPH_NAME = "Graph.obj";
-    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
+//    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
+    private final static String OUTPUT_DIR = "output/";
 
     private final static String TIME_ZONE_STRING = "Europe/Berlin";
     private final static String DATE_STRING = "2016-02-01";
@@ -45,8 +45,8 @@ public class OTPMatrixRouter {
     private final static double RIGHT = 13.5657;
     private final static double BOTTOM = 52.3926; // 52.3926 13.1949
     private final static double TOP = 52.6341; // 52.6341 13.5657
-    private final static int RASTER_COLUMN_COUNT = 2;
-    private final static int RASTER_ROW_COUNT = 2;
+    private final static int RASTER_COLUMN_COUNT = 5;
+    private final static int RASTER_ROW_COUNT = 5;
 
     // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;
@@ -102,18 +102,6 @@ public class OTPMatrixRouter {
         return calendar;
     }
 
-    private static InputsCSVWriter prepareWriter() {
-        InputsCSVWriter writer = new InputsCSVWriter(OUTPUT_DIR + "accessibility_Berlin.csv", " ");
-        writer.writeField("fromCoord.lat");
-        writer.writeField("fromCoord.lon");
-        writer.writeField("toCoord.lat");
-        writer.writeField("toCoord.lon");
-        writer.writeField("travelTime");
-        writer.writeField("TravelDistance");
-        writer.writeNewLine();
-        return writer;
-    }
-
     public static void routeMatrix() {
 
         buildGraph();
@@ -132,10 +120,29 @@ public class OTPMatrixRouter {
         rasterPop.rows = RASTER_ROW_COUNT;
         rasterPop.setup();
 
-        InputsCSVWriter writer = prepareWriter();
+        log.info("Start indexing vertices and writing them out...");
+        InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
+        Map<String, Vertex> vertices = new HashMap<>();
+        int idCounter = 0;
+        for (Individual individual : rasterPop) {
+            String id = Integer.toString(idCounter);
+            Vertex vertex = getNearestVertex(individual.lat, individual.lon, new HashSet<>(graph.getVertices()));
+            vertices.put(id, vertex);
+            verticesWriter.writeField(id);
+            verticesWriter.writeField(vertex.getLat());
+            verticesWriter.writeField(vertex.getLon());
+            verticesWriter.writeNewLine();
+            idCounter++;
+        }
+        verticesWriter.close();
+        log.info("Indexing vertices and writing them out: done.");
 
         log.info("Start routing...");
-        for (Individual fromIndividual : rasterPop) {
+        InputsCSVWriter timeWriter = new InputsCSVWriter(OUTPUT_DIR + "tt.csv", " ");
+        InputsCSVWriter distanceWriter = new InputsCSVWriter(OUTPUT_DIR + "td.csv", " ");
+
+        for (int i = 0; i < RASTER_COLUMN_COUNT*RASTER_ROW_COUNT; i++) {
+            long t0 = System.currentTimeMillis();
 
             TraverseModeSet modeSet = new TraverseModeSet();
             modeSet.setWalk(true);
@@ -148,32 +155,35 @@ public class OTPMatrixRouter {
             request.setMaxWalkDistance(Double.MAX_VALUE);
             request.batch = true;
             request.setDateTime(calendar.getTime());
-            request.from = new GenericLocation(fromIndividual.lat, fromIndividual.lon);
+            request.from = new GenericLocation(vertices.get(String.valueOf(i)).getLat(), vertices.get(String.valueOf(i)).getLon());
             try {
                 request.setRoutingContext(graph);
             } catch (Exception e) {
                 log.info(e.getMessage());
-                System.out.println("fromIndividual.lat = " + fromIndividual.lat);
-                System.out.println("fromIndividual.lon = " + fromIndividual.lon);
+                System.out.println("fromVertex.getLat() = " + vertices.get(String.valueOf(i)).getLat());
+                System.out.println("fromVertex.getLon() = " + vertices.get(String.valueOf(i)).getLon());
                 continue;
             }
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
-                for (Individual toIndividual : rasterPop) {
-//                    long t0 = System.currentTimeMillis();
+                for (int e = 0; e < RASTER_COLUMN_COUNT*RASTER_ROW_COUNT; e++) {
 
-                    if (fromIndividual.lat == toIndividual.lat && fromIndividual.lon == toIndividual.lon) continue;
-                    writer.writeField(fromIndividual.lat);
-                    writer.writeField(fromIndividual.lon);
-                    route(toIndividual.lat, toIndividual.lon, spt, calendar, writer);
-
-//                    long t1 = System.currentTimeMillis();
-//                    System.out.printf("Time: %d\n", t1-t0);
+                    if (vertices.get(String.valueOf(i)).equals(vertices.get(String.valueOf(e)))) continue;
+                    timeWriter.writeField(i);
+                    timeWriter.writeField(e);
+                    distanceWriter.writeField(i);
+                    distanceWriter.writeField(e);
+                    route(vertices.get(String.valueOf(e)), spt, timeWriter, distanceWriter);
+                    timeWriter.writeNewLine();
+                    distanceWriter.writeNewLine();
                 }
 
             }
+            long t1 = System.currentTimeMillis();
+            System.out.printf("Time: %d\n", t1-t0);
         }
-        writer.close();
+        timeWriter.close();
+        distanceWriter.close();
         log.info("Routing finished");
         log.info("Shutdown");
     }
@@ -185,8 +195,6 @@ public class OTPMatrixRouter {
         assert graph != null;
 
         Calendar calendar = prepareCalendarSettings();
-
-        InputsCSVWriter writer = prepareWriter();
 
         TraverseModeSet modeSet = new TraverseModeSet();
         modeSet.setWalk(true);
@@ -204,15 +212,14 @@ public class OTPMatrixRouter {
         if (spt != null) {
                 long t0 = System.currentTimeMillis();
 
-                writer.writeField(FROM_LAT);
-                writer.writeField(FROM_LON);
-                route(TO_LAT, TO_LON, spt, calendar, writer);
+                System.out.println("TO_LAT = " + TO_LAT);
+                System.out.println("TO_LON = " + TO_LON);
+//                route(getNearestVertex(TO_LAT, TO_LON, spt.getVertices()), spt);
 
                 long t1 = System.currentTimeMillis();
                 System.out.printf("Time: %d\n", t1-t0);
 
         }
-        writer.close();
 
     }
 
@@ -241,74 +248,30 @@ public class OTPMatrixRouter {
         return (earthRadius * c);
     }
 
-    private static void route(double destinationLat, double destinationLon, ShortestPathTree spt, Calendar calendar, InputsCSVWriter writer) {
+    private static void route(Vertex destination, ShortestPathTree spt, InputsCSVWriter timeWriter, InputsCSVWriter distanceWriter) {
 
-//        Coordinate c = new Coordinate(destinationLat, destinationLon);
-//        Envelope env = new Envelope(c);
-//        double xscale = Math.cos(c.y * 3.141592653589793D / 180.0D);
-//        double searchRadiusLat = SphericalDistanceLibrary.metersToDegrees(500.0D);
-//        env.expandBy(searchRadiusLat / xscale, searchRadiusLat);
-//        Collection vertices = spt.getOptions().getRoutingContext().graph.streetIndex.getVerticesForEnvelope(env);
-//
-//
-//        Iterator iterator = vertices.iterator();
-//        GraphPath path = null;
-//        System.out.println(vertices.iterator().hasNext());
-//        Vertex destination = (Vertex) vertices.iterator().next();
-//        path = spt.getPath(destination, false);
-//        //while (path == null && iterator.hasNext()) {
-//
-//        System.out.println("path = " + path);
-//        //}
-
-        GraphPath path = spt.getPath(getNearestVertex(destinationLat, destinationLon, spt.getVertices()), false);
-        if (path == null) return;
-
-//        long initialWaitTime;
+        GraphPath path = spt.getPath(destination, false);
+        if (path == null) {
+            Vertex alternativVertex = getNearestVertex(destination.getLat(), destination.getLon(), spt.getVertices());
+            path = spt.getPath(alternativVertex, false);
+            if (path == null) return;
+        }
         long elapsedTime = 0;
         double distance = 0;
-//        long transitTime = 0;
-//        long walkTime = 0;
-//        boolean transited = false;
 
         path.dump();
-//        if (!path.states.isEmpty()) {
-//            initialWaitTime = ((path.states.getFirst().getTimeInMillis() - calendar.getTime().getTime()) / 1000);
-////                        System.out.println("initial wait time: " + initialWaitTime);
-//        }
 
         for (State state : path.states) {
-//            if (state.isOnboard()) transited = true;
-//                        System.out.println("");
-//                        System.out.println("State infos start:");
-//                        System.out.println("state elapsedTime: " + elapsedTime);
-//                        System.out.println("state walkdistance: " + state.getWalkDistance());
-//                        System.out.println("isOnBoard: " + state.isOnboard());
-
             Edge backEdge = state.getBackEdge();
             if (backEdge != null && backEdge.getFromVertex() != null) {
-//                            System.out.println("backEdge = " + backEdge);
-//                            System.out.println("Mode: " + backEdge.getName());
-//                            System.out.println("backEdge.getFromVertex() = " + backEdge.getFromVertex());
-//                            System.out.println("Label" + backEdge.getFromVertex().getLabel());
-//                            System.out.println("Lat: " + backEdge.getFromVertex().getLat() + " Lon: " + backEdge.getFromVertex().getLon());
-//                            System.out.println("x: " + backEdge.getFromVertex().getX() + " y: " + backEdge.getFromVertex().getY());
-
-//                if (state.isOnboard()) transitTime += state.getActiveTime() - elapsedTime;
-//                else walkTime += state.getActiveTime() - elapsedTime;
-
                 distance += backEdge.getDistance();
-
                 elapsedTime = state.getActiveTime();
             }
         }
 
         //write output
-        writer.writeField(destinationLat);
-        writer.writeField(destinationLon);
-        writer.writeField(elapsedTime);
-        writer.writeField(distance);
-        writer.writeNewLine();
+        timeWriter.writeField(elapsedTime);
+        distanceWriter.writeField(distance);
     }
 
 }

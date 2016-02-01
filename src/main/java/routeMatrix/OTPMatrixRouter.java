@@ -39,12 +39,12 @@ public class OTPMatrixRouter {
     private final static String DATE_STRING = "2016-02-01";
     private final static int DEPARTURE_TIME = 8 * 60 * 60;
 
-    private final static double LEFT = 13.1949;
-    private final static double RIGHT = 13.5657;
-    private final static double BOTTOM = 52.3926; // 52.3926 13.1949
-    private final static double TOP = 52.6341; // 52.6341 13.5657
-    private final static int RASTER_COLUMN_COUNT = 5;
-    private final static int RASTER_ROW_COUNT = 5;
+    private final static double LEFT = 13.124627;
+    private final static double RIGHT = 13.718464; // ca. 41000m from right to left
+    private final static double BOTTOM = 52.361485;
+    private final static double TOP = 52.648131; // ca. 31000m from top to bottom
+    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
+    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
 
     // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;

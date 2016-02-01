@@ -160,15 +160,15 @@ public class OTPMatrixRouter {
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (Individual toIndividual : rasterPop) {
-                    long t0 = System.currentTimeMillis();
+//                    long t0 = System.currentTimeMillis();
 
                     if (fromIndividual.lat == toIndividual.lat && fromIndividual.lon == toIndividual.lon) continue;
                     writer.writeField(fromIndividual.lat);
                     writer.writeField(fromIndividual.lon);
                     route(toIndividual.lat, toIndividual.lon, spt, calendar, writer);
 
-                    long t1 = System.currentTimeMillis();
-                    System.out.printf("Time: %d\n", t1-t0);
+//                    long t1 = System.currentTimeMillis();
+//                    System.out.printf("Time: %d\n", t1-t0);
                 }
 
             }

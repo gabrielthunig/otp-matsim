@@ -1,5 +1,6 @@
 package routeMatrix;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import org.opentripplanner.analyst.batch.Individual;
 import org.opentripplanner.analyst.batch.SyntheticRasterPopulation;
 import org.opentripplanner.common.model.GenericLocation;
@@ -31,9 +32,11 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
+//    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
+    private final static String INPUT_ROOT = "input/";
     private final static String GRAPH_NAME = "Graph.obj";
-    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
+//    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
+    private final static String OUTPUT_DIR = "output/";
 
     private final static String TIME_ZONE_STRING = "Europe/Berlin";
     private final static String DATE_STRING = "2016-02-01";
@@ -131,6 +134,9 @@ public class OTPMatrixRouter {
             verticesWriter.writeField(vertex.getLon());
             verticesWriter.writeNewLine();
             idCounter++;
+            if (idCounter % 1000 == 0) {
+                log.info("Current status: Vertex nr. " + (idCounter+1) + " / " + rasterPop.size());
+            }
         }
         verticesWriter.close();
         log.info("Indexing vertices and writing them out: done.");

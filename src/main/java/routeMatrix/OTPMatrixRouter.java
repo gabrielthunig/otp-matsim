@@ -59,11 +59,75 @@ public class OTPMatrixRouter {
     public static void main(String[] args) {
 
         routeMatrix();
-//        routeSinglePath();
 
     }
 
-    public static boolean buildGraph() {
+    public static void routeMatrix() {
+
+        buildGraph();
+        Graph graph = loadGraph();
+        assert graph != null;
+
+        Calendar calendar = prepareCalendarSettings();
+
+        SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
+        rasterPop.left = LEFT;
+        rasterPop.right = RIGHT;
+        rasterPop.top = TOP;
+        rasterPop.bottom = BOTTOM;
+        rasterPop.cols = RASTER_COLUMN_COUNT;
+        rasterPop.rows = RASTER_ROW_COUNT;
+        rasterPop.setup();
+
+        Map<String, Vertex> vertices = indexVertices(graph, rasterPop);
+
+        routeMatrix(graph, calendar, vertices);
+        log.info("Shutdown");
+    }
+
+    public static void routeMatrix(List<Coordinate> coordinates) {
+        buildGraph();
+        Graph graph = loadGraph();
+        assert graph != null;
+
+        Calendar calendar = prepareCalendarSettings();
+
+        Map<String, Vertex> vertices = indexVertices(graph, coordinates);
+
+        routeMatrix(graph, calendar, vertices);
+        log.info("Shutdown");
+    }
+
+    public static double routeSinglePath() {
+        buildGraph();
+        Graph graph = loadGraph();
+        assert graph != null;
+
+        Calendar calendar = prepareCalendarSettings();
+
+        TraverseModeSet modeSet = new TraverseModeSet();
+        modeSet.setWalk(true);
+        modeSet.setTransit(true);
+        RoutingRequest request = new RoutingRequest(modeSet);
+        request.setWalkBoardCost(3 * 60); // override low 2-4 minute values
+        request.setBikeBoardCost(3 * 60 * 2);
+        request.setOptimize(OptimizeType.QUICK);
+        request.setMaxWalkDistance(Double.MAX_VALUE);
+        request.batch = true;
+        request.setDateTime(calendar.getTime());
+        request.from = new GenericLocation(FROM_LAT, FROM_LON);
+        request.setRoutingContext(graph);
+        ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
+        if (spt != null) {
+            System.out.println("TO_LAT = " + TO_LAT);
+            System.out.println("TO_LON = " + TO_LON);
+            return route(getNearestVertex(TO_LAT, TO_LON, spt.getVertices()), spt);
+        } else {
+            return -2;
+        }
+    }
+
+    private static boolean buildGraph() {
         if (!new File(INPUT_ROOT + GRAPH_NAME).exists()) {
             log.info("No graphfile found. Building the graph from content from: " + new File(INPUT_ROOT).getAbsolutePath() + " ...");
             OTPMain.main(new String[]{"--build", INPUT_ROOT});
@@ -74,11 +138,13 @@ public class OTPMatrixRouter {
         }
     }
 
-    public static Graph loadGraph() {
+    private static Graph loadGraph() {
 
         log.info("Loading the graph...");
         try {
-            return Graph.load(new File(INPUT_ROOT + GRAPH_NAME), Graph.LoadLevel.FULL);
+            Graph graph = Graph.load(new File(INPUT_ROOT + GRAPH_NAME), Graph.LoadLevel.FULL);
+            log.info("Loading the graph finished.");
+            return graph;
         } catch (IOException | ClassNotFoundException e) {
             log.info("Error while loading the Graph.");
             e.printStackTrace();
@@ -103,24 +169,30 @@ public class OTPMatrixRouter {
         return calendar;
     }
 
-    public static void routeMatrix() {
+    private static Map<String, Vertex> indexVertices(Graph graph, List<Coordinate> coordinates) {
+        log.info("Start indexing vertices and writing them out...");
+        InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
+        Map<String, Vertex> vertices = new HashMap<>();
+        int idCounter = 0;
+        for (Coordinate coordinate : coordinates) {
+            String id = Integer.toString(idCounter);
+            Vertex vertex = getNearestVertex(coordinate.x, coordinate.y, new HashSet<>(graph.getVertices()));
+            vertices.put(id, vertex);
+            verticesWriter.writeField(id);
+            verticesWriter.writeField(vertex.getLat());
+            verticesWriter.writeField(vertex.getLon());
+            verticesWriter.writeNewLine();
+            idCounter++;
+//            if (idCounter % 1000 == 0) {
+//                log.info("Current status: Vertex nr. " + (idCounter+1) + " / " + coordinates.size());
+//            }
+        }
+        verticesWriter.close();
+        log.info("Indexing vertices and writing them out: done.");
+        return vertices;
+    }
 
-        buildGraph();
-        Graph graph = loadGraph();
-        log.info("Loading the graph finished.");
-        assert graph != null;
-
-        Calendar calendar = prepareCalendarSettings();
-
-        SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
-        rasterPop.left = LEFT;
-        rasterPop.right = RIGHT;
-        rasterPop.top = TOP;
-        rasterPop.bottom = BOTTOM;
-        rasterPop.cols = RASTER_COLUMN_COUNT;
-        rasterPop.rows = RASTER_ROW_COUNT;
-        rasterPop.setup();
-
+    private static Map<String, Vertex> indexVertices(Graph graph, SyntheticRasterPopulation rasterPop) {
         log.info("Start indexing vertices and writing them out...");
         InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
         Map<String, Vertex> vertices = new HashMap<>();
@@ -134,43 +206,76 @@ public class OTPMatrixRouter {
             verticesWriter.writeField(vertex.getLon());
             verticesWriter.writeNewLine();
             idCounter++;
-            if (idCounter % 1000 == 0) {
-                log.info("Current status: Vertex nr. " + (idCounter+1) + " / " + rasterPop.size());
-            }
+//            if (idCounter % 1000 == 0) {
+//                log.info("Current status: Vertex nr. " + (idCounter+1) + " / " + rasterPop.size());
+//            }
         }
         verticesWriter.close();
         log.info("Indexing vertices and writing them out: done.");
+        return vertices;
+    }
 
+    private static Vertex getNearestVertex(double lat, double lon, Set<Vertex> vertices) {
+        double closestDistance = Double.MAX_VALUE;
+        Vertex closestVertex = null;
+        for (Vertex currentVertex : vertices) {
+            double currentDistance = distFrom(lat, lon, currentVertex.getLat(), currentVertex.getLon());
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closestVertex = currentVertex;
+            }
+        }
+        return closestVertex;
+    }
+
+    private static double distFrom(double lat1, double lng1, double lat2, double lng2) {
+        double earthRadius = 6371000; //meters
+        double dLat = Math.toRadians(lat2-lat1);
+        double dLng = Math.toRadians(lng2-lng1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLng/2) * Math.sin(dLng/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return (earthRadius * c);
+    }
+
+    private static RoutingRequest getRoutingRequest(Graph graph, Calendar calendar, Map<String, Vertex> vertices, int i) {
+        TraverseModeSet modeSet = new TraverseModeSet();
+        modeSet.setWalk(true);
+        modeSet.setTransit(true);
+//		    modeSet.setBicycle(true);
+        RoutingRequest request = new RoutingRequest(modeSet);
+        request.setWalkBoardCost(3 * 60); // override low 2-4 minute values
+        request.setBikeBoardCost(3 * 60 * 2);
+        request.setOptimize(OptimizeType.QUICK);
+        request.setMaxWalkDistance(Double.MAX_VALUE);
+        request.batch = true;
+        request.setDateTime(calendar.getTime());
+        request.from = new GenericLocation(vertices.get(String.valueOf(i)).getLat(), vertices.get(String.valueOf(i)).getLon());
+        try {
+            request.setRoutingContext(graph);
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            System.out.println("fromVertex.getLat() = " + vertices.get(String.valueOf(i)).getLat());
+            System.out.println("fromVertex.getLon() = " + vertices.get(String.valueOf(i)).getLon());
+            return null;
+        }
+        return request;
+    }
+
+    private static void routeMatrix(Graph graph, Calendar calendar, Map<String, Vertex> vertices) {
         log.info("Start routing...");
         InputsCSVWriter timeWriter = new InputsCSVWriter(OUTPUT_DIR + "tt.csv", " ");
         InputsCSVWriter distanceWriter = new InputsCSVWriter(OUTPUT_DIR + "td.csv", " ");
 
-        for (int i = 0; i < RASTER_COLUMN_COUNT*RASTER_ROW_COUNT; i++) {
+        for (int i = 0; i < vertices.size(); i++) {
             long t0 = System.currentTimeMillis();
 
-            TraverseModeSet modeSet = new TraverseModeSet();
-            modeSet.setWalk(true);
-            modeSet.setTransit(true);
-//		    modeSet.setBicycle(true);
-            RoutingRequest request = new RoutingRequest(modeSet);
-            request.setWalkBoardCost(3 * 60); // override low 2-4 minute values
-            request.setBikeBoardCost(3 * 60 * 2);
-            request.setOptimize(OptimizeType.QUICK);
-            request.setMaxWalkDistance(Double.MAX_VALUE);
-            request.batch = true;
-            request.setDateTime(calendar.getTime());
-            request.from = new GenericLocation(vertices.get(String.valueOf(i)).getLat(), vertices.get(String.valueOf(i)).getLon());
-            try {
-                request.setRoutingContext(graph);
-            } catch (Exception e) {
-                log.info(e.getMessage());
-                System.out.println("fromVertex.getLat() = " + vertices.get(String.valueOf(i)).getLat());
-                System.out.println("fromVertex.getLon() = " + vertices.get(String.valueOf(i)).getLon());
-                continue;
-            }
+            RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
-                for (int e = 0; e < RASTER_COLUMN_COUNT*RASTER_ROW_COUNT; e++) {
+                for (int e = 0; e < vertices.size(); e++) {
 
                     if (vertices.get(String.valueOf(i)).equals(vertices.get(String.valueOf(e)))) continue;
                     timeWriter.writeField(i);
@@ -189,67 +294,26 @@ public class OTPMatrixRouter {
         timeWriter.close();
         distanceWriter.close();
         log.info("Routing finished");
-        log.info("Shutdown");
     }
 
-    public static void routeSinglePath() {
-        buildGraph();
-        Graph graph = loadGraph();
-        log.info("Loading the graph finished.");
-        assert graph != null;
-
-        Calendar calendar = prepareCalendarSettings();
-
-        TraverseModeSet modeSet = new TraverseModeSet();
-        modeSet.setWalk(true);
-        modeSet.setTransit(true);
-        RoutingRequest request = new RoutingRequest(modeSet);
-        request.setWalkBoardCost(3 * 60); // override low 2-4 minute values
-        request.setBikeBoardCost(3 * 60 * 2);
-        request.setOptimize(OptimizeType.QUICK);
-        request.setMaxWalkDistance(Double.MAX_VALUE);
-        request.batch = true;
-        request.setDateTime(calendar.getTime());
-        request.from = new GenericLocation(FROM_LAT, FROM_LON);
-        request.setRoutingContext(graph);
-        ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
-        if (spt != null) {
-                long t0 = System.currentTimeMillis();
-
-                System.out.println("TO_LAT = " + TO_LAT);
-                System.out.println("TO_LON = " + TO_LON);
-//                route(getNearestVertex(TO_LAT, TO_LON, spt.getVertices()), spt);
-
-                long t1 = System.currentTimeMillis();
-                System.out.printf("Time: %d\n", t1-t0);
-
+    private static double route(Vertex destination, ShortestPathTree spt) {
+        GraphPath path = spt.getPath(destination, false);
+        if (path == null) {
+            Vertex alternativVertex = getNearestVertex(destination.getLat(), destination.getLon(), spt.getVertices());
+            path = spt.getPath(alternativVertex, false);
+            if (path == null) return -1;
         }
+        long elapsedTime = 0;
 
-    }
+        path.dump();
 
-    private static Vertex getNearestVertex(double lat, double lon, Set<Vertex> vertices) {
-        double closestDistance = Double.MAX_VALUE;
-        Vertex closestVertex = null;
-        for (Vertex currentVertex : vertices) {
-            double currentDistance = distFrom(lat, lon, currentVertex.getLat(), currentVertex.getLon());
-            if (currentDistance < closestDistance) {
-                closestDistance = currentDistance;
-                closestVertex = currentVertex;
+        for (State state : path.states) {
+            Edge backEdge = state.getBackEdge();
+            if (backEdge != null && backEdge.getFromVertex() != null) {
+                elapsedTime = state.getActiveTime();
             }
         }
-        return closestVertex;
-    }
-
-    public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
-        double earthRadius = 6371000; //meters
-        double dLat = Math.toRadians(lat2-lat1);
-        double dLng = Math.toRadians(lng2-lng1);
-        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                        Math.sin(dLng/2) * Math.sin(dLng/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return (earthRadius * c);
+        return elapsedTime;
     }
 
     private static void route(Vertex destination, ShortestPathTree spt, InputsCSVWriter timeWriter, InputsCSVWriter distanceWriter) {

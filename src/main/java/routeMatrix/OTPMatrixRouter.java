@@ -46,8 +46,8 @@ public class OTPMatrixRouter {
     private final static double RIGHT = 13.718464; // ca. 41000m from right to left
     private final static double BOTTOM = 52.361485;
     private final static double TOP = 52.648131; // ca. 31000m from top to bottom
-    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
-    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
+    private final static int RASTER_COLUMN_COUNT = 3;//164; // makes width of one column approx. 250m
+    private final static int RASTER_ROW_COUNT = 3;//124; // makes height of one row approx. 250m
 
     // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;
@@ -307,7 +307,12 @@ public class OTPMatrixRouter {
             long t0 = System.currentTimeMillis();
 
             RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
-            if (request == null) continue;
+            if (request == null) {
+                for (int e = 0; e < result[i].length; e++) {
+                    result[i][e] = -1;
+                }
+                continue;
+            }
             System.out.println("request = " + request);
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
@@ -333,7 +338,7 @@ public class OTPMatrixRouter {
             if (path == null) return -1;
         }
         long elapsedTime = 0;
-        boolean transited = false;
+        //boolean transited = false;
 
         path.dump();
 
@@ -341,13 +346,10 @@ public class OTPMatrixRouter {
             Edge backEdge = state.getBackEdge();
             if (backEdge != null && backEdge.getFromVertex() != null) {
                 elapsedTime = state.getActiveTime();
-                if (state.isOnboard()) transited = true;
+                //if (state.isOnboard()) transited = true;
             }
         }
-        System.out.println("transited = " + transited);
-        if (transited == true) {
-            assert false;
-        }
+        //System.out.println("transited = " + transited);
         return elapsedTime;
     }
 

@@ -46,8 +46,10 @@ public class OTPMatrixRouter {
     private final static double RIGHT = 13.718464; // ca. 41000m from right to left
     private final static double BOTTOM = 52.361485;
     private final static double TOP = 52.648131; // ca. 31000m from top to bottom
-    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
-    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
+//    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
+    private final static int RASTER_COLUMN_COUNT = 3; // makes width of one column approx. 250m
+//    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
+    private final static int RASTER_ROW_COUNT = 3; // makes height of one row approx. 250m
 
     // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;
@@ -59,16 +61,17 @@ public class OTPMatrixRouter {
     public static void main(String[] args) {
 
         routeMatrix();
+//        System.out.println(routeSinglePath());
 
     }
 
     public static void routeMatrix() {
 
-        buildGraph();
-        Graph graph = loadGraph();
+        buildGraph(INPUT_ROOT);
+        Graph graph = loadGraph(INPUT_ROOT);
         assert graph != null;
 
-        Calendar calendar = prepareCalendarSettings();
+        Calendar calendar = prepareDefaultCalendarSettings();
 
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
         rasterPop.left = LEFT;
@@ -81,29 +84,29 @@ public class OTPMatrixRouter {
 
         Map<String, Vertex> vertices = indexVertices(graph, rasterPop);
 
-        routeMatrix(graph, calendar, vertices);
+        routeMatrix(graph, calendar, vertices, OUTPUT_DIR);
         log.info("Shutdown");
     }
 
     public static void routeMatrix(List<Coordinate> coordinates) {
-        buildGraph();
-        Graph graph = loadGraph();
+        buildGraph(INPUT_ROOT);
+        Graph graph = loadGraph(INPUT_ROOT);
         assert graph != null;
 
-        Calendar calendar = prepareCalendarSettings();
+        Calendar calendar = prepareDefaultCalendarSettings();
 
         Map<String, Vertex> vertices = indexVertices(graph, coordinates);
 
-        routeMatrix(graph, calendar, vertices);
+        routeMatrix(graph, calendar, vertices, OUTPUT_DIR);
         log.info("Shutdown");
     }
 
     public static double routeSinglePath() {
-        buildGraph();
-        Graph graph = loadGraph();
+        buildGraph(INPUT_ROOT);
+        Graph graph = loadGraph(INPUT_ROOT);
         assert graph != null;
 
-        Calendar calendar = prepareCalendarSettings();
+        Calendar calendar = prepareDefaultCalendarSettings();
 
         TraverseModeSet modeSet = new TraverseModeSet();
         modeSet.setWalk(true);
@@ -127,10 +130,10 @@ public class OTPMatrixRouter {
         }
     }
 
-    private static boolean buildGraph() {
-        if (!new File(INPUT_ROOT + GRAPH_NAME).exists()) {
-            log.info("No graphfile found. Building the graph from content from: " + new File(INPUT_ROOT).getAbsolutePath() + " ...");
-            OTPMain.main(new String[]{"--build", INPUT_ROOT});
+    public static boolean buildGraph(String inputRoot) {
+        if (!new File(inputRoot + GRAPH_NAME).exists()) {
+            log.info("No graphfile found. Building the graph from content from: " + new File(inputRoot).getAbsolutePath() + " ...");
+            OTPMain.main(new String[]{"--build", inputRoot});
             log.info("Building the graph finished.");
             return true;
         } else {
@@ -138,11 +141,11 @@ public class OTPMatrixRouter {
         }
     }
 
-    private static Graph loadGraph() {
+    public static Graph loadGraph(String inputRoot) {
 
         log.info("Loading the graph...");
         try {
-            Graph graph = Graph.load(new File(INPUT_ROOT + GRAPH_NAME), Graph.LoadLevel.FULL);
+            Graph graph = Graph.load(new File(inputRoot + GRAPH_NAME), Graph.LoadLevel.FULL);
             log.info("Loading the graph finished.");
             return graph;
         } catch (IOException | ClassNotFoundException e) {
@@ -152,7 +155,7 @@ public class OTPMatrixRouter {
         }
     }
 
-    private static Calendar prepareCalendarSettings() {
+    private static Calendar prepareDefaultCalendarSettings() {
         log.info("Preparing settings for routing...");
         final Calendar calendar = Calendar.getInstance();
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
@@ -169,7 +172,7 @@ public class OTPMatrixRouter {
         return calendar;
     }
 
-    private static Map<String, Vertex> indexVertices(Graph graph, List<Coordinate> coordinates) {
+    public static Map<String, Vertex> indexVertices(Graph graph, List<Coordinate> coordinates) {
         log.info("Start indexing vertices and writing them out...");
         InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
         Map<String, Vertex> vertices = new HashMap<>();
@@ -192,7 +195,7 @@ public class OTPMatrixRouter {
         return vertices;
     }
 
-    private static Map<String, Vertex> indexVertices(Graph graph, SyntheticRasterPopulation rasterPop) {
+    public static Map<String, Vertex> indexVertices(Graph graph, SyntheticRasterPopulation rasterPop) {
         log.info("Start indexing vertices and writing them out...");
         InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
         Map<String, Vertex> vertices = new HashMap<>();
@@ -256,23 +259,24 @@ public class OTPMatrixRouter {
         try {
             request.setRoutingContext(graph);
         } catch (Exception e) {
-            log.info(e.getMessage());
-            System.out.println("fromVertex.getLat() = " + vertices.get(String.valueOf(i)).getLat());
-            System.out.println("fromVertex.getLon() = " + vertices.get(String.valueOf(i)).getLon());
+            log.error(e.getMessage());
+            System.out.println("Latitude  = " + vertices.get(String.valueOf(i)).getLat());
+            System.out.println("Longitude = " + vertices.get(String.valueOf(i)).getLon());
             return null;
         }
         return request;
     }
 
-    private static void routeMatrix(Graph graph, Calendar calendar, Map<String, Vertex> vertices) {
+    public static void routeMatrix(Graph graph, Calendar calendar, Map<String, Vertex> vertices, String outputDir) {
         log.info("Start routing...");
-        InputsCSVWriter timeWriter = new InputsCSVWriter(OUTPUT_DIR + "tt.csv", " ");
-        InputsCSVWriter distanceWriter = new InputsCSVWriter(OUTPUT_DIR + "td.csv", " ");
+        InputsCSVWriter timeWriter = new InputsCSVWriter(outputDir + "tt.csv", " ");
+        InputsCSVWriter distanceWriter = new InputsCSVWriter(outputDir + "td.csv", " ");
 
         for (int i = 0; i < vertices.size(); i++) {
             long t0 = System.currentTimeMillis();
 
             RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
+            if (request == null) continue;
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (int e = 0; e < vertices.size(); e++) {
@@ -296,6 +300,33 @@ public class OTPMatrixRouter {
         log.info("Routing finished");
     }
 
+    public static double[][] routeMatrix(Graph graph, Calendar calendar, Map<String, Vertex> vertices) {
+        log.info("Start routing...");
+
+        double[][] result = new double[vertices.size()][vertices.size()];
+
+        for (int i = 0; i < vertices.size(); i++) {
+            long t0 = System.currentTimeMillis();
+
+            RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
+            if (request == null) continue;
+            System.out.println("request = " + request);
+            ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
+            if (spt != null) {
+                for (int e = 0; e < vertices.size(); e++) {
+
+                    if (vertices.get(String.valueOf(i)).equals(vertices.get(String.valueOf(e)))) continue;
+                    result[i][e] = route(vertices.get(String.valueOf(e)), spt);
+                }
+
+            }
+            long t1 = System.currentTimeMillis();
+            System.out.printf("Time: %d\n", t1-t0);
+        }
+        log.info("Routing finished");
+        return result;
+    }
+
     private static double route(Vertex destination, ShortestPathTree spt) {
         GraphPath path = spt.getPath(destination, false);
         if (path == null) {
@@ -304,6 +335,7 @@ public class OTPMatrixRouter {
             if (path == null) return -1;
         }
         long elapsedTime = 0;
+        boolean transited = false;
 
         path.dump();
 
@@ -311,7 +343,12 @@ public class OTPMatrixRouter {
             Edge backEdge = state.getBackEdge();
             if (backEdge != null && backEdge.getFromVertex() != null) {
                 elapsedTime = state.getActiveTime();
+                if (state.isOnboard()) transited = true;
             }
+        }
+        System.out.println("transited = " + transited);
+        if (transited == true) {
+            assert false;
         }
         return elapsedTime;
     }

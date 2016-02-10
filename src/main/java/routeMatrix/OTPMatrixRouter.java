@@ -46,10 +46,8 @@ public class OTPMatrixRouter {
     private final static double RIGHT = 13.718464; // ca. 41000m from right to left
     private final static double BOTTOM = 52.361485;
     private final static double TOP = 52.648131; // ca. 31000m from top to bottom
-//    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
-    private final static int RASTER_COLUMN_COUNT = 3; // makes width of one column approx. 250m
-//    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
-    private final static int RASTER_ROW_COUNT = 3; // makes height of one row approx. 250m
+    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
+    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
 
     // only relevant for single-path router, not for matrix
     private final static double FROM_LAT = 52.521918;

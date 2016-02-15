@@ -1,6 +1,8 @@
 package routeMatrix;
 
+import junit.framework.TestCase;
 import net.opengis.ows11.validation.OnlineResourceTypeValidator;
+import org.junit.Assert;
 import org.junit.Test;
 import org.opentripplanner.analyst.batch.SyntheticRasterPopulation;
 import org.opentripplanner.routing.graph.Graph;
@@ -18,6 +20,7 @@ import java.util.TimeZone;
 public class OTPTimeRouterTest {
 
     private static final Logger log = LoggerFactory.getLogger(OTPTimeRouterTest.class);
+    public static final double EPSILON = 1e-10;
 
     @Test
     public void testMatrixRouting() throws Exception {
@@ -44,29 +47,44 @@ public class OTPTimeRouterTest {
 
 
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
-        /*mission street
-        rasterPop.left = -122.4231;
-        rasterPop.right = -122.4174;
-        rasterPop.top = 37.7528;
-        rasterPop.bottom = 37.7401;*/
         rasterPop.top = 33.9538;
         rasterPop.left = -117.4495;
         rasterPop.bottom = 33.9244;
         rasterPop.right = -117.3978;
-        rasterPop.cols = 3;
-        rasterPop.rows = 3;
+        rasterPop.cols = 2;
+        rasterPop.rows = 2;
         rasterPop.setup();
 
         Map<String, Vertex> vertices = OTPMatrixRouter.indexVertices(graph, rasterPop);
 
         double[][] timeMatrix = OTPMatrixRouter.routeMatrix(graph, calendar, vertices);
-        for (double[] column : timeMatrix) {
-            for (double time : column) {
-                System.out.println("time = " + time);
+        double[] actuals = new double[timeMatrix.length * timeMatrix[0].length];
+        int counter = 0;
+        for (int i = 0; i < timeMatrix.length; i++) {
+            for (int e = 0; e < timeMatrix[i].length; e++) {
+                actuals[counter] = timeMatrix[i][e];
+                counter++;
             }
         }
 
-
+        double[] expecteds = new double[16];
+        expecteds[0] = 0.0;
+        expecteds[1] = 366.0;
+        expecteds[2] = 1659.0;
+        expecteds[3] = 1577.0;
+        expecteds[4] = 1780.0;
+        expecteds[5] = 0.0;
+        expecteds[6] = 1493.0;
+        expecteds[7] = 1411.0;
+        expecteds[8] = 1677.0;
+        expecteds[9] = 2569.0;
+        expecteds[10] = 0.0;
+        expecteds[11] = 2447.0;
+        expecteds[12] = 2290.0;
+        expecteds[13] = 1924.0;
+        expecteds[14] = 1499.0;
+        expecteds[15] = 0.0;
+        Assert.assertArrayEquals(expecteds, actuals, EPSILON);
 
 
         log.info("Shutdown");

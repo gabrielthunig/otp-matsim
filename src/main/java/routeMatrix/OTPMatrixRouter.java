@@ -46,21 +46,29 @@ public class OTPMatrixRouter {
     private final static double RIGHT = 13.718464; // ca. 41000m from right to left
     private final static double BOTTOM = 52.361485;
     private final static double TOP = 52.648131; // ca. 31000m from top to bottom
-    private final static int RASTER_COLUMN_COUNT = 3;//164; // makes width of one column approx. 250m
-    private final static int RASTER_ROW_COUNT = 3;//124; // makes height of one row approx. 250m
+    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
+    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
 
-    // only relevant for single-path router, not for matrix
-    private final static double FROM_LAT = 52.521918;
-    private final static double FROM_LON = 13.413215;
-    private final static double TO_LAT = 52.538186;
-    private final static double TO_LON = 13.4356;
-    //editable constants end
 
     public static void main(String[] args) {
 
-        routeMatrix();
-//        System.out.println(routeSinglePath());
+        CSVReader reader = new CSVReader(INPUT_ROOT + "stops.txt", ",");
 
+        Map<String, Coordinate> coordinates = new HashMap<>();
+        reader.readLine();
+        String[] line = reader.readLine();
+        while (line != null) {
+            if (line.length == 9) {
+                coordinates.put(line[0] ,new Coordinate(Double.parseDouble(line[4]), Double.parseDouble(line[5])));
+            } else if (line.length == 10) {
+                coordinates.put(line[0] ,new Coordinate(Double.parseDouble(line[5]), Double.parseDouble(line[6])));
+            } else {
+                break;
+            }
+            line = reader.readLine() ;
+        }
+        log.info("Found " + coordinates.size() + " coordinates.");
+        routeMatrix(coordinates);
     }
 
     public static void routeMatrix() {
@@ -99,33 +107,17 @@ public class OTPMatrixRouter {
         log.info("Shutdown");
     }
 
-    public static double routeSinglePath() {
+    public static void routeMatrix(Map<String, Coordinate> coordinates) {
         buildGraph(INPUT_ROOT);
         Graph graph = loadGraph(INPUT_ROOT);
         assert graph != null;
 
         Calendar calendar = prepareDefaultCalendarSettings();
 
-        TraverseModeSet modeSet = new TraverseModeSet();
-        modeSet.setWalk(true);
-        modeSet.setTransit(true);
-        RoutingRequest request = new RoutingRequest(modeSet);
-        request.setWalkBoardCost(3 * 60); // override low 2-4 minute values
-        request.setBikeBoardCost(3 * 60 * 2);
-        request.setOptimize(OptimizeType.QUICK);
-        request.setMaxWalkDistance(Double.MAX_VALUE);
-        request.batch = true;
-        request.setDateTime(calendar.getTime());
-        request.from = new GenericLocation(FROM_LAT, FROM_LON);
-        request.setRoutingContext(graph);
-        ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
-        if (spt != null) {
-            System.out.println("TO_LAT = " + TO_LAT);
-            System.out.println("TO_LON = " + TO_LON);
-            return route(getNearestVertex(TO_LAT, TO_LON, spt.getVertices()), spt);
-        } else {
-            return -2;
-        }
+        Map<String, Vertex> vertices = indexVertices(graph, coordinates);
+
+        routeMatrix(graph, calendar, vertices, OUTPUT_DIR);
+        log.info("Shutdown");
     }
 
     public static boolean buildGraph(String inputRoot) {
@@ -193,6 +185,24 @@ public class OTPMatrixRouter {
         return vertices;
     }
 
+    public static Map<String, Vertex> indexVertices(Graph graph, Map<String, Coordinate> coordinates) {
+        log.info("Start indexing vertices and writing them out...");
+        InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
+        Map<String, Vertex> vertices = new HashMap<>();
+        for (String id : coordinates.keySet()) {
+            Coordinate coordinate = coordinates.get(id);
+            Vertex vertex = getNearestVertex(coordinate.x, coordinate.y, new HashSet<>(graph.getVertices()));
+            vertices.put(id, vertex);
+            verticesWriter.writeField(id);
+            verticesWriter.writeField(vertex.getLat());
+            verticesWriter.writeField(vertex.getLon());
+            verticesWriter.writeNewLine();
+        }
+        verticesWriter.close();
+        log.info("Indexing vertices and writing them out: done.");
+        return vertices;
+    }
+
     public static Map<String, Vertex> indexVertices(Graph graph, SyntheticRasterPopulation rasterPop) {
         log.info("Start indexing vertices and writing them out...");
         InputsCSVWriter verticesWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
@@ -241,7 +251,7 @@ public class OTPMatrixRouter {
         return (earthRadius * c);
     }
 
-    private static RoutingRequest getRoutingRequest(Graph graph, Calendar calendar, Map<String, Vertex> vertices, int i) {
+    private static RoutingRequest getRoutingRequest(Graph graph, Calendar calendar, Vertex vertex) {
         TraverseModeSet modeSet = new TraverseModeSet();
         modeSet.setWalk(true);
         modeSet.setTransit(true);
@@ -253,13 +263,13 @@ public class OTPMatrixRouter {
         request.setMaxWalkDistance(Double.MAX_VALUE);
         request.batch = true;
         request.setDateTime(calendar.getTime());
-        request.from = new GenericLocation(vertices.get(String.valueOf(i)).getLat(), vertices.get(String.valueOf(i)).getLon());
+        request.from = new GenericLocation(vertex.getLat(), vertex.getLon());
         try {
             request.setRoutingContext(graph);
         } catch (Exception e) {
             log.error(e.getMessage());
-            System.out.println("Latitude  = " + vertices.get(String.valueOf(i)).getLat());
-            System.out.println("Longitude = " + vertices.get(String.valueOf(i)).getLon());
+            System.out.println("Latitude  = " + vertex.getLat());
+            System.out.println("Longitude = " + vertex.getLon());
             return null;
         }
         return request;
@@ -270,21 +280,22 @@ public class OTPMatrixRouter {
         InputsCSVWriter timeWriter = new InputsCSVWriter(outputDir + "tt.csv", " ");
         InputsCSVWriter distanceWriter = new InputsCSVWriter(outputDir + "td.csv", " ");
 
-        for (int i = 0; i < vertices.size(); i++) {
+        for (String originId : vertices.keySet()) {
             long t0 = System.currentTimeMillis();
 
-            RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
+            Vertex origin = vertices.get(originId);
+            RoutingRequest request = getRoutingRequest(graph, calendar, origin);
             if (request == null) continue;
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
-                for (int e = 0; e < vertices.size(); e++) {
-
-                    if (vertices.get(String.valueOf(i)).equals(vertices.get(String.valueOf(e)))) continue;
-                    timeWriter.writeField(i);
-                    timeWriter.writeField(e);
-                    distanceWriter.writeField(i);
-                    distanceWriter.writeField(e);
-                    route(vertices.get(String.valueOf(e)), spt, timeWriter, distanceWriter);
+                for (String destinationId : vertices.keySet()) {
+                    Vertex destination = vertices.get(destinationId);
+                    if (origin.equals(destination)) continue;
+                    timeWriter.writeField(originId);
+                    timeWriter.writeField(destinationId);
+                    distanceWriter.writeField(originId);
+                    distanceWriter.writeField(destinationId);
+                    route(destination, spt, timeWriter, distanceWriter);
                     timeWriter.writeNewLine();
                     distanceWriter.writeNewLine();
                 }
@@ -306,7 +317,8 @@ public class OTPMatrixRouter {
         for (int i = 0; i < vertices.size(); i++) {
             long t0 = System.currentTimeMillis();
 
-            RoutingRequest request = getRoutingRequest(graph, calendar, vertices, i);
+            Vertex origin = vertices.get(i);
+            RoutingRequest request = getRoutingRequest(graph, calendar, origin);
             if (request == null) {
                 for (int e = 0; e < result[i].length; e++) {
                     result[i][e] = -1;
@@ -317,9 +329,9 @@ public class OTPMatrixRouter {
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (int e = 0; e < vertices.size(); e++) {
-
-                    if (vertices.get(String.valueOf(i)).equals(vertices.get(String.valueOf(e)))) continue;
-                    result[i][e] = route(vertices.get(String.valueOf(e)), spt);
+                    Vertex destination = vertices.get(e);
+                    if (origin.equals(destination)) continue;
+                    result[i][e] = route(destination, spt);
                 }
 
             }

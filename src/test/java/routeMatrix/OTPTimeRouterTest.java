@@ -45,7 +45,6 @@ public class OTPTimeRouterTest {
         calendar.add(Calendar.SECOND, (7*60*57));
         log.info("Preparing settings for routing finished.");
 
-
         SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
         rasterPop.top = 33.9538;
         rasterPop.left = -117.4495;
@@ -62,8 +61,7 @@ public class OTPTimeRouterTest {
         int counter = 0;
         for (int i = 0; i < timeMatrix.length; i++) {
             for (int e = 0; e < timeMatrix[i].length; e++) {
-                actuals[counter] = timeMatrix[i][e];
-                counter++;
+                actuals[counter++] = timeMatrix[i][e];
             }
         }
 
@@ -86,9 +84,7 @@ public class OTPTimeRouterTest {
         expecteds[15] = 0.0;
         Assert.assertArrayEquals(expecteds, actuals, EPSILON);
 
-
         log.info("Shutdown");
-
 	}
 
 }

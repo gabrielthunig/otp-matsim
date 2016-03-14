@@ -68,6 +68,11 @@ public class OTPMatrixRouter {
             line = reader.readLine() ;
         }
         log.info("Found " + coordinates.size() + " coordinates.");
+
+        if (new File(OUTPUT_DIR).mkdir()) {
+            log.info("Did not found outputRoot at " + OUTPUT_DIR + " Created it as a new directory.");
+        }
+
         routeMatrix(coordinates);
     }
 

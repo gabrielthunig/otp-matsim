@@ -32,22 +32,22 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-//    private final static String INPUT_ROOT = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/";
-    private final static String INPUT_ROOT = "input/";
+    private final static String INPUT_ROOT = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/";
+//    private final static String INPUT_ROOT = "input/";
     private final static String GRAPH_NAME = "Graph.obj";
-//    private final static String OUTPUT_DIR = "../../SVN/shared-svn/projects/accessibility_berlin/otp_2016-02-01/output/";
-    private final static String OUTPUT_DIR = "output/";
+    private final static String OUTPUT_DIR = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/output/";
+//    private final static String OUTPUT_DIR = "output/";
 
     private final static String TIME_ZONE_STRING = "Europe/Berlin";
     private final static String DATE_STRING = "2016-02-01";
     private final static int DEPARTURE_TIME = 8 * 60 * 60;
 
-    private final static double LEFT = 13.124627;
-    private final static double RIGHT = 13.718464; // ca. 41000m from right to left
-    private final static double BOTTOM = 52.361485;
-    private final static double TOP = 52.648131; // ca. 31000m from top to bottom
-    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
-    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
+//    private final static double LEFT = 13.124627;
+//    private final static double RIGHT = 13.718464; // ca. 41000m from right to left
+//    private final static double BOTTOM = 52.361485;
+//    private final static double TOP = 52.648131; // ca. 31000m from top to bottom
+//    private final static int RASTER_COLUMN_COUNT = 164; // makes width of one column approx. 250m
+//    private final static int RASTER_ROW_COUNT = 124; // makes height of one row approx. 250m
 
 
     public static void main(String[] args) {
@@ -71,28 +71,28 @@ public class OTPMatrixRouter {
         routeMatrix(coordinates);
     }
 
-    public static void routeMatrix() {
-
-        buildGraph(INPUT_ROOT);
-        Graph graph = loadGraph(INPUT_ROOT);
-        assert graph != null;
-
-        Calendar calendar = prepareDefaultCalendarSettings();
-
-        SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
-        rasterPop.left = LEFT;
-        rasterPop.right = RIGHT;
-        rasterPop.top = TOP;
-        rasterPop.bottom = BOTTOM;
-        rasterPop.cols = RASTER_COLUMN_COUNT;
-        rasterPop.rows = RASTER_ROW_COUNT;
-        rasterPop.setup();
-
-        Map<String, Vertex> vertices = indexVertices(graph, rasterPop);
-
-        routeMatrix(graph, calendar, vertices, OUTPUT_DIR);
-        log.info("Shutdown");
-    }
+//    public static void routeMatrix() {
+//
+//        buildGraph(INPUT_ROOT);
+//        Graph graph = loadGraph(INPUT_ROOT);
+//        assert graph != null;
+//
+//        Calendar calendar = prepareDefaultCalendarSettings();
+//
+//        SyntheticRasterPopulation rasterPop = new SyntheticRasterPopulation();
+//        rasterPop.left = LEFT;
+//        rasterPop.right = RIGHT;
+//        rasterPop.top = TOP;
+//        rasterPop.bottom = BOTTOM;
+//        rasterPop.cols = RASTER_COLUMN_COUNT;
+//        rasterPop.rows = RASTER_ROW_COUNT;
+//        rasterPop.setup();
+//
+//        Map<String, Vertex> vertices = indexVertices(graph, rasterPop);
+//
+//        routeMatrix(graph, calendar, vertices, OUTPUT_DIR);
+//        log.info("Shutdown");
+//    }
 
     public static void routeMatrix(List<Coordinate> coordinates) {
         buildGraph(INPUT_ROOT);

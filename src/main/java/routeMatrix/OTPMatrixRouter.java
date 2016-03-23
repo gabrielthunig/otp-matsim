@@ -2,14 +2,17 @@ package routeMatrix;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import org.opentripplanner.analyst.batch.Individual;
-import org.opentripplanner.analyst.batch.SyntheticRasterPopulation;
+import org.opentripplanner.analyst.core.Sample;
 import org.opentripplanner.analyst.request.SampleFactory;
 import org.opentripplanner.common.model.GenericLocation;
 import org.opentripplanner.routing.algorithm.AStar;
 import org.opentripplanner.routing.core.OptimizeType;
 import org.opentripplanner.routing.core.RoutingRequest;
+import org.opentripplanner.routing.core.State;
 import org.opentripplanner.routing.core.TraverseModeSet;
+import org.opentripplanner.routing.graph.Edge;
 import org.opentripplanner.routing.graph.Graph;
+import org.opentripplanner.routing.spt.GraphPath;
 import org.opentripplanner.routing.spt.ShortestPathTree;
 import org.opentripplanner.standalone.OTPMain;
 import org.slf4j.Logger;
@@ -90,7 +93,7 @@ public class OTPMatrixRouter {
         }
     }
 
-    public static Graph loadGraph(String inputRoot) {
+    static Graph loadGraph(String inputRoot) {
 
         log.info("Loading the graph...");
         try {
@@ -211,30 +214,46 @@ public class OTPMatrixRouter {
         timeWriter.writeField(elapsedTime);
     }
 
-    public static long getSingleRouteTime(Graph graph, Coordinate origin, Coordinate destination) {
+    static long getSingleRouteTime(Graph graph, Calendar calendar, Coordinate origin, Coordinate destination) {
+        if (origin.equals(destination)) return 0;
         assert graph != null;
 
-        log.info("Preparing settings for routing...");
-        final Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        TimeZone timeZone = TimeZone.getTimeZone("America/San_Francisco");
-        df.setTimeZone(timeZone);
-        calendar.setTimeZone(timeZone);
-        try {
-            calendar.setTime(df.parse("2016-02-02"));
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        calendar.add(Calendar.SECOND, (8*60*60));
         Individual startIndividual = new Individual("origin", origin.y, origin.x, 0);
         RoutingRequest routingRequest = getRoutingRequest(graph, calendar, startIndividual);
-        log.info("Preparing settings for routing finished.");
 
         ShortestPathTree spt = (new AStar()).getShortestPathTree(routingRequest);
         if (spt != null) {
             SampleFactory sampleFactory = graph.getSampleFactory();
-            return sampleFactory.getSample(destination.y, destination.x).eval(spt);
+            //return sampleFactory.getSample(destination.y, destination.x).eval(spt);
+            Sample sample = sampleFactory.getSample(destination.y, destination.x);
+            GraphPath path = eval(spt, sample);
+            long elapsedTime = 0;
+
+            for (State state : path.states) {
+                Edge backEdge = state.getBackEdge();
+                if (backEdge != null && backEdge.getFromVertex() != null) {
+                    elapsedTime = state.getActiveTime();
+                }
+            }
+            return elapsedTime;
         }
         return -1;
+    }
+
+    private static GraphPath eval(ShortestPathTree spt, Sample sample) {
+        State s0 = spt.getState(sample.v0);
+        State s1 = spt.getState(sample.v1);
+        long m0 = Long.MAX_VALUE;
+        long m1 = Long.MAX_VALUE;
+        double walkSpeed = spt.getOptions().walkSpeed;
+        if (s0 != null)
+            m0 = (int)(s0.getActiveTime() + sample.d0 / walkSpeed);
+        if (s1 != null)
+            m1 = (int)(s1.getActiveTime() + sample.d1 / walkSpeed);
+        if (m0 < m1) {
+            return new GraphPath(s0, false);
+        } else {
+            return new GraphPath(s1, false);
+        }
     }
 }

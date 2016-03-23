@@ -251,8 +251,10 @@ public class OTPMatrixRouter {
         if (s1 != null)
             m1 = (int)(s1.getActiveTime() + sample.d1 / walkSpeed);
         if (m0 < m1) {
+            assert s0 != null;
             return new GraphPath(s0, false);
         } else {
+            assert s1 != null;
             return new GraphPath(s1, false);
         }
     }

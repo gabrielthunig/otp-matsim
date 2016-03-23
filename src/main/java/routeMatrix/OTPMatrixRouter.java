@@ -60,6 +60,7 @@ public class OTPMatrixRouter {
             } else {
                 break;
             }
+            //if (individuals.size()>10) break;
             line = reader.readLine() ;
         }
         log.info("Found " + individuals.size() + " coordinates.");
@@ -169,7 +170,7 @@ public class OTPMatrixRouter {
     private static void routeMatrix(Graph graph, Calendar calendar, List<Individual> individuals, String outputDir) {
         log.info("Start routing...");
         InputsCSVWriter timeWriter = new InputsCSVWriter(outputDir + "tt.csv", " ");
-//        InputsCSVWriter distanceWriter = new InputsCSVWriter(outputDir + "td.csv", " ");
+        InputsCSVWriter distanceWriter = new InputsCSVWriter(outputDir + "td.csv", " ");
 
         for (Individual fromIndividual : individuals) {
             long t0 = System.currentTimeMillis();
@@ -178,12 +179,15 @@ public class OTPMatrixRouter {
             if (request == null) continue;
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
-                for (Individual toIndividual1 : individuals) {
-                    if (fromIndividual.equals(toIndividual1)) continue;
+                for (Individual toIndividual : individuals) {
+                    if (fromIndividual.equals(toIndividual)) continue;
                     timeWriter.writeField(fromIndividual.label);
-                    timeWriter.writeField(toIndividual1.label);
-                    route(toIndividual1, spt, timeWriter);
+                    timeWriter.writeField(toIndividual.label);
+                    distanceWriter.writeField(fromIndividual.label);
+                    distanceWriter.writeField(toIndividual.label);
+                    route(toIndividual, spt, timeWriter, distanceWriter);
                     timeWriter.writeNewLine();
+                    distanceWriter.writeNewLine();
                 }
 
             }
@@ -191,27 +195,27 @@ public class OTPMatrixRouter {
             System.out.printf("Time: %d\n", t1-t0);
         }
         timeWriter.close();
+        distanceWriter.close();
         log.info("Routing finished");
     }
 
-    private static void route(Individual toIndividual, ShortestPathTree spt, InputsCSVWriter timeWriter) {
+    private static void route(Individual toIndividual, ShortestPathTree spt, InputsCSVWriter timeWriter, InputsCSVWriter distanceWriter) {
 
-//        GraphPath path = spt.getPath(toIndividual.sample.v0, false);
-//        long elapsedTime = 0;
-//
-////        path.dump();
-//
-//        for (State state : path.states) {
-//            Edge backEdge = state.getBackEdge();
-//            if (backEdge != null && backEdge.getFromVertex() != null) {
-//                elapsedTime = state.getActiveTime();
-//            }
-//        }
+        GraphPath path = eval(spt, toIndividual.sample);
+        long elapsedTime = 0;
+        double distance = 0;
 
-        long elapsedTime = toIndividual.sample.eval(spt);
+        for (State state : path.states) {
+            Edge backEdge = state.getBackEdge();
+            if (backEdge != null && backEdge.getFromVertex() != null) {
+                distance += backEdge.getDistance();
+                elapsedTime = state.getActiveTime();
+            }
+        }
 
         //write output
         timeWriter.writeField(elapsedTime);
+        distanceWriter.writeField(distance);
     }
 
     static long getSingleRouteTime(Graph graph, Calendar calendar, Coordinate origin, Coordinate destination) {

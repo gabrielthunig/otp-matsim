@@ -192,12 +192,16 @@ public class OTPMatrixRouter {
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
                 for (Individual toIndividual : toIndividuals) {
-                    if (fromIndividual.equals(toIndividual)) continue;
                     timeWriter.writeField(fromIndividual.label);
                     timeWriter.writeField(toIndividual.label);
                     distanceWriter.writeField(fromIndividual.label);
                     distanceWriter.writeField(toIndividual.label);
-                    route(toIndividual, spt, timeWriter, distanceWriter);
+                    if (fromIndividual.equals(toIndividual)) {
+                        timeWriter.writeField(0);
+                        distanceWriter.writeField(0);
+                    } else {
+                        route(toIndividual, spt, timeWriter, distanceWriter);
+                    }
                     timeWriter.writeNewLine();
                     distanceWriter.writeNewLine();
                 }

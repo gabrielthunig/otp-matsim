@@ -73,7 +73,7 @@ public class OTPMatrixRouter {
             } else {
                 break;
             }
-            if (individuals.size()>10) break;
+            //if (individuals.size()>10) break;
             line = reader.readLine() ;
         }
         log.info("Found " + individuals.size() + " coordinates.");

@@ -12,7 +12,6 @@ import org.opentripplanner.routing.core.State;
 import org.opentripplanner.routing.core.TraverseModeSet;
 import org.opentripplanner.routing.graph.Edge;
 import org.opentripplanner.routing.graph.Graph;
-import org.opentripplanner.routing.spt.GraphPath;
 import org.opentripplanner.routing.spt.ShortestPathTree;
 import org.opentripplanner.standalone.OTPMain;
 import org.slf4j.Logger;
@@ -22,10 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * Created by gthunig
@@ -35,11 +31,11 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-    private final static String INPUT_ROOT = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/";
-//    private final static String INPUT_ROOT = "input/";
+//    private final static String INPUT_ROOT = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/";
+    private final static String INPUT_ROOT = "input/";
     private final static String GRAPH_NAME = "Graph.obj";
-    private final static String OUTPUT_DIR = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/output/";
-//    private final static String OUTPUT_DIR = "output/";
+//    private final static String OUTPUT_DIR = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/output/";
+    private final static String OUTPUT_DIR = "output/";
 
     private final static String TIME_ZONE_STRING = "Europe/Berlin";
     private final static String DATE_STRING = "2016-04-01";
@@ -67,9 +63,9 @@ public class OTPMatrixRouter {
         String[] line = reader.readLine();
         while (line != null) {
             if (line.length == 9) {
-                individuals.add(new Individual(Double.toString(Double.parseDouble(line[0])), Double.parseDouble(line[5]), Double.parseDouble(line[4]), 0));
+                individuals.add(new Individual(line[0], Double.parseDouble(line[5]), Double.parseDouble(line[4]), 0));
             } else if (line.length == 10) {
-                individuals.add(new Individual(Double.toString(Double.parseDouble(line[0])), Double.parseDouble(line[6]), Double.parseDouble(line[5]), 0));
+                individuals.add(new Individual(line[0], Double.parseDouble(line[6]), Double.parseDouble(line[5]), 0));
             } else {
                 break;
             }
@@ -215,11 +211,12 @@ public class OTPMatrixRouter {
 
     private static void route(Individual toIndividual, ShortestPathTree spt, InputsCSVWriter timeWriter, InputsCSVWriter distanceWriter) {
 
-        GraphPath path = eval(spt, toIndividual.sample);
+        //GraphPath path = eval(spt, toIndividual.sample);
+        List<State> states = eval(spt, toIndividual.sample);
         long elapsedTime = 0;
         double distance = 0;
 
-        for (State state : path.states) {
+        for (State state : states) {
             Edge backEdge = state.getBackEdge();
             if (backEdge != null && backEdge.getFromVertex() != null) {
                 distance += backEdge.getDistance();
@@ -244,10 +241,11 @@ public class OTPMatrixRouter {
             SampleFactory sampleFactory = graph.getSampleFactory();
             //return sampleFactory.getSample(destination.y, destination.x).eval(spt);
             Sample sample = sampleFactory.getSample(destination.y, destination.x);
-            GraphPath path = eval(spt, sample);
+            //GraphPath path = eval(spt, sample);
+            List<State> states = eval(spt, sample);
             long elapsedTime = 0;
 
-            for (State state : path.states) {
+            for (State state : states) {
                 Edge backEdge = state.getBackEdge();
                 if (backEdge != null && backEdge.getFromVertex() != null) {
                     elapsedTime = state.getActiveTime();
@@ -258,7 +256,7 @@ public class OTPMatrixRouter {
         return -1;
     }
 
-    private static GraphPath eval(ShortestPathTree spt, Sample sample) {
+    private static List<State> eval(ShortestPathTree spt, Sample sample) {
         State s0 = spt.getState(sample.v0);
         State s1 = spt.getState(sample.v1);
         long m0 = Long.MAX_VALUE;
@@ -268,12 +266,13 @@ public class OTPMatrixRouter {
             m0 = (int)(s0.getActiveTime() + sample.d0 / walkSpeed);
         if (s1 != null)
             m1 = (int)(s1.getActiveTime() + sample.d1 / walkSpeed);
-        if (m0 < m1) {
-            assert s0 != null;
-            return new GraphPath(s0, false);
-        } else {
-            assert s1 != null;
-            return new GraphPath(s1, false);
+        State bestState = (m0<m1)?s0:s1;
+        LinkedList<State> states = new LinkedList<>();
+
+        for(State cur = bestState; cur != null; cur = cur.getBackState()) {
+            states.addFirst(cur);
         }
+
+        return states;
     }
 }

@@ -67,9 +67,9 @@ public class OTPMatrixRouter {
         String[] line = reader.readLine();
         while (line != null) {
             if (line.length == 9) {
-                individuals.add(new Individual("", Double.parseDouble(line[5]), Double.parseDouble(line[4]), 0));
+                individuals.add(new Individual(Double.toString(Double.parseDouble(line[0])), Double.parseDouble(line[5]), Double.parseDouble(line[4]), 0));
             } else if (line.length == 10) {
-                individuals.add(new Individual("", Double.parseDouble(line[6]), Double.parseDouble(line[5]), 0));
+                individuals.add(new Individual(Double.toString(Double.parseDouble(line[0])), Double.parseDouble(line[6]), Double.parseDouble(line[5]), 0));
             } else {
                 break;
             }
@@ -141,9 +141,7 @@ public class OTPMatrixRouter {
         log.info("Start indexing vertices and writing them out...");
         InputsCSVWriter individualsWriter = new InputsCSVWriter(OUTPUT_DIR + fileName, ",");
         SampleFactory sampleFactory = graph.getSampleFactory();
-        int idCounter = 0;
         for (Individual individual : individuals) {
-            individual.label = Integer.toString(idCounter++);
             individual.sample = sampleFactory.getSample(individual.lon, individual.lat);
             individualsWriter.writeField(individual.label);
             individualsWriter.writeField(individual.lat);

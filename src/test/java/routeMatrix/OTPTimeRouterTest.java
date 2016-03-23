@@ -1,16 +1,11 @@
 package routeMatrix;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import junit.framework.TestCase;
-import net.opengis.ows11.validation.OnlineResourceTypeValidator;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opentripplanner.analyst.batch.Individual;
 import org.opentripplanner.analyst.batch.SyntheticRasterPopulation;
 import org.opentripplanner.routing.graph.Graph;
-import org.opentripplanner.routing.graph.Vertex;
-import org.opentripplanner.util.TestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

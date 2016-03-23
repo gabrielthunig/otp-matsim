@@ -37,6 +37,9 @@ public class OTPMatrixRouter {
     //editable constants
 //    private final static String INPUT_ROOT = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/";
     private final static String INPUT_ROOT = "input/";
+    private final static String FROM_INPUT_FILENAME = "stops.txt";
+    private final static String TO_INPUT_FILENAME = "stops.txt";
+
     private final static String GRAPH_NAME = "Graph.obj";
 //    private final static String OUTPUT_DIR = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/output/";
     private final static String OUTPUT_DIR = "output/";
@@ -47,7 +50,20 @@ public class OTPMatrixRouter {
 
     public static void main(String[] args) {
 
-        CSVReader reader = new CSVReader(INPUT_ROOT + "stops.txt", ",");
+        List<Individual> fromIndividuals = readIndividuals(FROM_INPUT_FILENAME);
+        List<Individual> toIndividuals = readIndividuals(TO_INPUT_FILENAME);
+
+        routeMatrix(fromIndividuals, toIndividuals);
+    }
+
+    private static void mkdir() {
+        if (new File(OUTPUT_DIR).mkdir()) {
+            log.info("Did not found outputRoot at " + OUTPUT_DIR + " Created it as a new directory.");
+        }
+    }
+
+    private static List<Individual> readIndividuals(String fileName) {
+        CSVReader reader = new CSVReader(INPUT_ROOT + fileName, ",");
 
         List<Individual> individuals = new ArrayList<>();
         reader.readLine();
@@ -60,26 +76,25 @@ public class OTPMatrixRouter {
             } else {
                 break;
             }
-            //if (individuals.size()>10) break;
+            if (individuals.size()>10) break;
             line = reader.readLine() ;
         }
         log.info("Found " + individuals.size() + " coordinates.");
 
-        if (new File(OUTPUT_DIR).mkdir()) {
-            log.info("Did not found outputRoot at " + OUTPUT_DIR + " Created it as a new directory.");
-        }
-
-        routeMatrix(individuals);
+        return individuals;
     }
 
-    private static void routeMatrix(List<Individual> individuals) {
+    private static void routeMatrix(List<Individual> fromindividuals, List<Individual> toindividuals) {
+
         buildGraph(INPUT_ROOT);
         Graph graph = loadGraph(INPUT_ROOT);
         assert graph != null;
 
         Calendar calendar = prepareDefaultCalendarSettings();
 
-        routeMatrix(graph, calendar, indexIndividuals(graph, individuals), OUTPUT_DIR);
+        mkdir();
+
+        routeMatrix(graph, calendar, indexIndividuals(graph, fromindividuals, "fromIDs.csv"), indexIndividuals(graph, toindividuals, "toIDs.csv"), OUTPUT_DIR);
         log.info("Shutdown");
     }
 
@@ -125,9 +140,9 @@ public class OTPMatrixRouter {
         return calendar;
     }
 
-    private static List<Individual> indexIndividuals(Graph graph, List<Individual> individuals) {
+    private static List<Individual> indexIndividuals(Graph graph, List<Individual> individuals, String fileName) {
         log.info("Start indexing vertices and writing them out...");
-        InputsCSVWriter individualsWriter = new InputsCSVWriter(OUTPUT_DIR + "ids.csv", ",");
+        InputsCSVWriter individualsWriter = new InputsCSVWriter(OUTPUT_DIR + fileName, ",");
         SampleFactory sampleFactory = graph.getSampleFactory();
         int idCounter = 0;
         for (Individual individual : individuals) {
@@ -167,19 +182,19 @@ public class OTPMatrixRouter {
         return request;
     }
 
-    private static void routeMatrix(Graph graph, Calendar calendar, List<Individual> individuals, String outputDir) {
+    private static void routeMatrix(Graph graph, Calendar calendar, List<Individual> fromIndividuals, List<Individual> toIndividuals, String outputDir) {
         log.info("Start routing...");
         InputsCSVWriter timeWriter = new InputsCSVWriter(outputDir + "tt.csv", " ");
         InputsCSVWriter distanceWriter = new InputsCSVWriter(outputDir + "td.csv", " ");
 
-        for (Individual fromIndividual : individuals) {
+        for (Individual fromIndividual : fromIndividuals) {
             long t0 = System.currentTimeMillis();
 
             RoutingRequest request = getRoutingRequest(graph, calendar, fromIndividual);
             if (request == null) continue;
             ShortestPathTree spt = (new AStar()).getShortestPathTree(request);
             if (spt != null) {
-                for (Individual toIndividual : individuals) {
+                for (Individual toIndividual : toIndividuals) {
                     if (fromIndividual.equals(toIndividual)) continue;
                     timeWriter.writeField(fromIndividual.label);
                     timeWriter.writeField(toIndividual.label);

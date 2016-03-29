@@ -211,10 +211,10 @@ public class OTPMatrixRouter {
 
     private static void route(Individual toIndividual, ShortestPathTree spt, InputsCSVWriter timeWriter, InputsCSVWriter distanceWriter) {
 
-        //GraphPath path = eval(spt, toIndividual.sample);
         List<State> states = eval(spt, toIndividual.sample);
-        long elapsedTime = 0;
-        double distance = 0;
+
+        long elapsedTime = Long.MAX_VALUE;
+        double distance = Double.MAX_VALUE;
 
         for (State state : states) {
             Edge backEdge = state.getBackEdge();
@@ -241,7 +241,7 @@ public class OTPMatrixRouter {
             SampleFactory sampleFactory = graph.getSampleFactory();
             Sample sample = sampleFactory.getSample(destination.y, destination.x);
             List<State> states = eval(spt, sample);
-            long elapsedTime = 0;
+            long elapsedTime = Long.MAX_VALUE;
 
             for (State state : states) {
                 Edge backEdge = state.getBackEdge();

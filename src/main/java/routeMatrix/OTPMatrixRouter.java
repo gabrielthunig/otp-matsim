@@ -239,9 +239,7 @@ public class OTPMatrixRouter {
         ShortestPathTree spt = (new AStar()).getShortestPathTree(routingRequest);
         if (spt != null) {
             SampleFactory sampleFactory = graph.getSampleFactory();
-            //return sampleFactory.getSample(destination.y, destination.x).eval(spt);
             Sample sample = sampleFactory.getSample(destination.y, destination.x);
-            //GraphPath path = eval(spt, sample);
             List<State> states = eval(spt, sample);
             long elapsedTime = 0;
 

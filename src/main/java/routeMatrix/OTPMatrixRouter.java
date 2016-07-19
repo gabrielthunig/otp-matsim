@@ -31,13 +31,11 @@ public class OTPMatrixRouter {
     private static final Logger log = LoggerFactory.getLogger(OTPMatrixRouter.class);
 
     //editable constants
-//    private final static String INPUT_ROOT = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/";
-    private final static String INPUT_ROOT = "input/";
+    private final static String INPUT_ROOT = "../shared-svn/projects/maxess/data/nairobi/digital_matatus/gtfs/";
     private final static String GRAPH_NAME = "Graph.obj";
-//    private final static String OUTPUT_DIR = "../../Workspace/shared-svn/projects/accessibility_berlin/otp/2016-03-14/output/";
-    private final static String OUTPUT_DIR = "output/";
+    private final static String OUTPUT_DIR = "../shared-svn/projects/maxess/data/nairobi/digital_matatus/gtfs/matrix/";
 
-    private final static String TIME_ZONE_STRING = "Europe/Berlin";
+    private final static String TIME_ZONE_STRING = "Africa/Nairobi";
     private final static String DATE_STRING = "2016-04-01";
     private final static int DEPARTURE_TIME = 8 * 60 * 60;
 
